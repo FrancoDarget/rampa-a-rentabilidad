@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rampa a Rentabilidad</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg: #ECEEF0;
+    --surface: #FFFFFF;
+    --surface-2: #E1E5E4;
+    --surface-3: #D7DCDA;
+    --border: #CCD3D0;
+    --ink: #1A231F;
+    --muted: #5B665F;
+    --accent: #2454B0;
+    --accent-soft: #DCE6F8;
+    --good: #1E8A5F;
+    --good-soft: #DCF0E6;
+    --bad: #C1442B;
+    --bad-soft: #F6DFDA;
+    --warn: #9A6E12;
+    --warn-soft: #F3E6C6;
+    --shadow: 0 1px 2px rgba(20,30,25,0.06), 0 8px 24px -12px rgba(20,30,25,0.18);
+    --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --font-body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #12181A;
+      --surface: #1A2224;
+      --surface-2: #212B2D;
+      --surface-3: #2A3537;
+      --border: #303C3D;
+      --ink: #E9EDE9;
+      --muted: #93A29A;
+      --accent: #7DA0EE;
+      --accent-soft: #223354;
+      --good: #4CC08A;
+      --good-soft: #1B3A2C;
+      --bad: #E1725A;
+      --bad-soft: #402420;
+      --warn: #E0B04D;
+      --warn-soft: #3D3115;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #12181A;
+    --surface: #1A2224;
+    --surface-2: #212B2D;
+    --surface-3: #2A3537;
+    --border: #303C3D;
+    --ink: #E9EDE9;
+    --muted: #93A29A;
+    --accent: #7DA0EE;
+    --accent-soft: #223354;
+    --good: #4CC08A;
+    --good-soft: #1B3A2C;
+    --bad: #E1725A;
+    --bad-soft: #402420;
+    --warn: #E0B04D;
+    --warn-soft: #3D3115;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--accent-soft); }
+
+  .app{
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  header.top h1{
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  header.top p.sub{
+    margin: 0;
+    color: var(--muted);
+    max-width: 62ch;
+    font-size: 14px;
+  }
+  .biz-field{
+    display:flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 220px;
+  }
+  .biz-field label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .biz-field input{
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--border);
+    color: var(--ink);
+    padding: 2px 0 4px;
+    width: 100%;
+  }
+  .biz-field input:focus{ outline:none; border-color: var(--accent); }
+
+  .header-controls{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-start;
+  }
+  .currency-field{
+    display:flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+  }
+  .currency-field > label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .fx-field{
+    margin-top: 8px;
+    display:flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .fx-field label{
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .fx-field .num-wrap input{ font-size: 13px; padding: 6px 10px 6px 30px; }
+
+  /* ---------- KPI row ---------- */
+  .kpis{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .kpi{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .kpi .label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .kpi .value{
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .kpi .value.good{ color: var(--good); }
+  .kpi .value.bad{ color: var(--bad); }
+  .kpi .hint{
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ---------- Layout grid ---------- */
+  .layout{
+    display:grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  aside.sidebar{
+    position: sticky;
+    top: 20px;
+    display:flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  main.results{
+    display:flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card .card-head{
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .card .card-head h2{
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .card .card-head p.card-sub{
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 60ch;
+  }
+  .card .card-body{ padding: 18px; }
+
+  details.group{
+    border-bottom: 1px solid var(--border);
+  }
+  details.group:last-of-type{ border-bottom: none; }
+  details.group summary{
+    cursor: pointer;
+    list-style: none;
+    padding: 13px 18px;
+    font-weight: 600;
+    font-size: 13px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    color: var(--ink);
+  }
+  details.group summary::-webkit-details-marker{ display:none; }
+  details.group summary::after{
+    content: '+';
+    font-family: var(--font-mono);
+    color: var(--muted);
+    font-size: 15px;
+    transition: transform .15s ease;
+  }
+  details.group[open] summary::after{ content: '–'; }
+  details.group .group-body{
+    padding: 4px 18px 16px;
+    display:flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  details.collapsible{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  details.collapsible > summary{
+    cursor: pointer;
+    list-style: none;
+    padding: 14px 18px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  details.collapsible > summary::-webkit-details-marker{ display:none; }
+  details.collapsible > summary h2{
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+  }
+  details.collapsible > summary .toggle-hint{
+    font-size: 11.5px;
+    color: var(--muted);
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  details.collapsible > summary .toggle-hint::after{
+    content: '▾';
+    transition: transform .15s ease;
+  }
+  details.collapsible[open] > summary .toggle-hint::after{ transform: rotate(180deg); }
+  details.collapsible > summary p.card-sub{
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  details.collapsible .collapsible-body{
+    padding: 0 18px 18px;
+    display:flex;
+    flex-direction: column;
+    gap: 18px;
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+  }
+
+  .field{
+    display:flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field .flabel{
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  .field .fnote{
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .field-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .field-row input[type="checkbox"]{
+    width: 15px; height: 15px; accent-color: var(--accent); flex: none;
+  }
+  .fixed-cost-row{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .fixed-cost-row input.plain{ flex: 1.3; min-width: 0; }
+  .fixed-cost-row .num-wrap{ flex: 1; min-width: 0; }
+  .fixed-cost-row .remove-btn{
+    flex: none;
+    width: 26px; height: 26px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .fixed-cost-row .remove-btn:hover{ background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
+  .num-wrap{
+    position: relative;
+    display:flex;
+    align-items:center;
+  }
+  .num-wrap .prefix, .num-wrap .suffix{
+    position:absolute;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    font-size: 13px;
+    pointer-events:none;
+  }
+  .num-wrap .prefix{ left: 10px; }
+  .num-wrap .suffix{ right: 10px; }
+  input[type="number"], input[type="text"].plain{
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--ink);
+    width: 100%;
+  }
+  .num-wrap.has-prefix input{ padding-left: 34px; }
+  .num-wrap.has-suffix input{ padding-right: 26px; }
+  input:focus{ outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{ opacity: 0.5; }
+
+  .btn{
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--ink);
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+  .btn:hover{ background: var(--surface-3); }
+  .btn:focus-visible{ outline: 2px solid var(--accent); outline-offset: 1px; }
+  .btn.primary{ background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover{ filter: brightness(1.08); }
+  .btn.ghost{ background: transparent; }
+  .btn.small{ padding: 5px 9px; font-size: 11.5px; }
+  .btn:disabled{ opacity: 0.45; cursor: not-allowed; }
+  .btn:disabled:hover{ background: var(--surface-2); }
+
+  /* ---------- Scenario card ---------- */
+  .scenario-top{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+  }
+  .scenario-revenue{ min-width: 220px; }
+  .scenario-revenue label, .segmented-label{
+    display:block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .scenario-revenue .num-wrap input{ font-size: 18px; padding: 10px 10px 10px 36px; font-weight: 600; }
+  .segmented{
+    display:inline-flex;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .segmented button{
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 7px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .segmented button.active{
+    background: var(--surface);
+    color: var(--accent);
+    box-shadow: 0 1px 2px rgba(20,30,25,0.12);
+  }
+  .segmented.small{ padding: 2px; gap: 1px; }
+  .segmented.small button{ padding: 4px 8px; font-size: 11px; }
+  .stat-grid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .stat-box{
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .stat-box.driver{
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+  .stat-box.result{
+    background: var(--good-soft);
+    border-color: var(--good);
+  }
+  .stat-box .stat-label{
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+  }
+  .stat-box .stat-label .edit-tag{
+    color: var(--accent);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .stat-box .stat-label .edit-tag.result-tag{ color: var(--good); }
+  .stat-box .stat-value{
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .stat-box .num-wrap input{
+    background: var(--surface);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 7px 8px 7px 30px;
+  }
+  .stat-box .num-wrap.has-suffix input{ padding-left: 8px; padding-right: 22px; }
+
+  /* ---------- Breakeven ---------- */
+  .breakeven-grid{
+    display:grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 18px;
+  }
+  .breakeven-main{
+    background: var(--good-soft);
+    border: 1px solid var(--good);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .breakeven-main.unreachable{
+    background: var(--bad-soft);
+    border-color: var(--bad);
+  }
+  .breakeven-main .be-label{
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+    opacity: 0.75;
+    margin-bottom: 6px;
+  }
+  .breakeven-main .be-figure{
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--good);
+    line-height: 1.1;
+  }
+  .breakeven-main.unreachable .be-figure{ color: var(--bad); font-size: 18px; }
+  .breakeven-main .be-sub{
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  .breakeven-secondary{
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .breakeven-secondary .be-label{
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .breakeven-secondary .be-figure{
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .breakeven-secondary .be-sub{
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .gauge{ margin-top: 18px; }
+  .gauge-track{
+    position: relative;
+    height: 14px;
+    background: var(--surface-3);
+    border-radius: 7px;
+    overflow: visible;
+  }
+  .gauge-fill{
+    position:absolute;
+    left:0; top:0; bottom:0;
+    background: var(--accent);
+    border-radius: 7px;
+  }
+  .gauge-fill.below{ background: var(--bad); }
+  .gauge-marker{
+    position:absolute;
+    top: -6px;
+    width: 2px;
+    height: 26px;
+    background: var(--good);
+  }
+  .gauge-marker .gauge-marker-label{
+    position:absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    color: var(--good);
+    font-weight: 600;
+  }
+  .gauge-scale{
+    display:flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 22px;
+    font-family: var(--font-mono);
+  }
+
+  .implied-row{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border);
+  }
+  .implied-item{ font-size: 12.5px; color: var(--muted); }
+  .implied-item strong{
+    display:block;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ---------- Chart ---------- */
+  .chart-legend{
+    display:flex; gap:16px; font-size:12px; color: var(--muted); align-items:center;
+  }
+  .chart-legend .dot{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+  svg.chart{ width:100%; height:auto; display:block; }
+  svg.chart text{ font-family: var(--font-mono); fill: var(--muted); }
+  svg.chart .bar{ fill: var(--accent-soft); }
+  svg.chart .bar-label{ font-size: 10px; fill: var(--muted); }
+  svg.chart .line-good{ stroke: var(--good); }
+  svg.chart .line-bad{ stroke: var(--bad); }
+  svg.chart .dot-good{ fill: var(--good); }
+  svg.chart .dot-bad{ fill: var(--bad); }
+  svg.chart .grid{ stroke: var(--border); stroke-width: 1; }
+  svg.chart .axis-label{ font-size: 11px; fill: var(--ink); }
+
+  /* ---------- Tables ---------- */
+  .table-wrap{ overflow-x: auto; }
+  table{
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12.5px;
+    min-width: 480px;
+  }
+  table.pl{ min-width: 640px; }
+  table.pl-scenario{ min-width: 520px; }
+  thead th{
+    text-align: right;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 10.5px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th:first-child, tbody td:first-child{ text-align: left; }
+  tbody td{
+    padding: 8px 12px;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child td{ border-bottom: none; }
+  thead th:first-child, tbody td:first-child{
+    position: sticky; left: 0;
+    background: var(--surface);
+    font-family: var(--font-body);
+    white-space: normal;
+    min-width: 220px;
+    font-variant-numeric: normal;
+  }
+  tr.subtotal td{ font-weight: 600; background: var(--surface-2); }
+  tr.subtotal td:first-child{ background: var(--surface-2); }
+  tr.net td{ font-weight: 700; background: var(--accent-soft); font-size: 13px; }
+  tr.net td:first-child{ background: var(--accent-soft); }
+  tr.info td{ color: var(--muted); font-style: italic; }
+  td.neg{ color: var(--bad); }
+  td.pos{ color: var(--good); }
+  .col-total{ background: var(--surface-2); }
+  .col-current{ background: var(--accent-soft); }
+
+  .ramp-table input{ text-align: right; }
+  .ramp-table td:first-child input{ text-align:left; font-family: var(--font-body); }
+  .ramp-table td{ font-family: var(--font-mono); }
+  .ramp-actions{ display:flex; gap:8px; margin-top:12px; }
+
+  footer.note{
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  footer.note strong{ color: var(--ink); }
+
+  @media (max-width: 880px){
+    .layout{ grid-template-columns: 1fr; }
+    aside.sidebar{ position: static; }
+    .kpis{ grid-template-columns: repeat(2, 1fr); }
+    header.top h1{ font-size: 27px; }
+    .stat-grid{ grid-template-columns: repeat(2, 1fr); }
+    .breakeven-grid{ grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px){
+    .kpis{ grid-template-columns: 1fr 1fr; }
+    .stat-grid{ grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div>
+      <h1>Rampa a Rentabilidad</h1>
+      <p class="sub">Definí un escenario de facturación y pauta publicitaria para un negocio de e-commerce — elegí si tu punto de partida es la facturación, la inversión en dólares, el CAC o el ROAS — y encontrá el piso de facturación necesario para cubrir costos antes de empezar a cobrarle una comisión variable al cliente. Metodología inspirada en un modelo real de ramp-up para retail online en Argentina — todos los supuestos son editables.</p>
+    </div>
+    <div class="header-controls">
+      <div class="biz-field">
+        <label for="bizName">Negocio</label>
+        <input id="bizName" type="text" class="plain" value="Mi negocio de e-commerce">
+      </div>
+      <div class="currency-field">
+        <label>Moneda</label>
+        <div class="segmented" id="currencySegmented">
+          <button type="button" data-currency="USD">USD</button>
+          <button type="button" data-currency="ARS">ARS</button>
+        </div>
+        <div class="fx-field" id="fxFieldWrap">
+          <label for="fxRate">Tipo de cambio (ARS por US$)</label>
+          <div class="num-wrap has-prefix"><span class="prefix">AR$</span>
+            <input type="number" id="fxRate" min="1" step="1">
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpiRow"></section>
+
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="card">
+        <div class="card-head">
+          <h2>Supuestos</h2>
+          <button class="btn small ghost" id="resetBtn" title="Volver a los valores del modelo de ejemplo">Restablecer</button>
+        </div>
+
+        <details class="group" open>
+          <summary>Economía unitaria</summary>
+          <div class="group-body">
+            <div class="field">
+              <label class="flabel" for="aov">Ticket promedio (AOV)</label>
+              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                <input type="number" id="aov" min="0" step="1">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-row" style="justify-content:space-between;">
+                <label class="flabel">COGS (costo de mercadería)</label>
+                <div class="segmented small" id="cogsModeSegmented">
+                  <button type="button" data-cogsmode="pct">%</button>
+                  <button type="button" data-cogsmode="perUnit">US$/unidad</button>
+                </div>
+              </div>
+              <div id="cogsInputHost"></div>
+              <span class="fnote">En US$/unidad, el costo total se calcula sobre las unidades vendidas (facturación / ticket promedio).</span>
+            </div>
+            <div class="field">
+              <label class="flabel" for="shipping">Costo de envío gratis (por pedido)</label>
+              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                <input type="number" id="shipping" min="0" step="0.5">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="group" open>
+          <summary>Comisiones y plataforma</summary>
+          <div class="group-body">
+            <div class="field">
+              <label class="flabel" for="gatewayPct">Pasarela de pago + cuotas (% s/ venta)</label>
+              <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                <input type="number" id="gatewayPct" min="0" max="100" step="0.1">
+              </div>
+            </div>
+            <div class="field">
+              <label class="flabel" for="platformPct">Comisión ecommerce por pasarela externa (%)</label>
+              <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                <input type="number" id="platformPct" min="0" max="100" step="0.1">
+              </div>
+            </div>
+            <div class="field">
+              <label class="flabel" for="platformFee">Fee mensual de la plataforma ecommerce</label>
+              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                <input type="number" id="platformFee" min="0" step="1">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="group" open>
+          <summary>Costos fijos del cliente</summary>
+          <div class="group-body">
+            <span class="fnote">Sueldos, oficina y demás costos fijos que el cliente tiene que cubrir con las ventas — nosotros también los cubrimos antes de cobrar la comisión variable.</span>
+            <div id="fixedCostsList"></div>
+            <div class="ramp-actions" style="margin-top:0;">
+              <button class="btn small" id="addFixedCostBtn" type="button">+ Agregar costo fijo</button>
+            </div>
+            <div class="field-row" style="justify-content:space-between; padding-top:4px; border-top:1px dashed var(--border);">
+              <span class="flabel" style="font-weight:600;">Total mensual</span>
+              <span class="flabel" id="fixedCostsTotal" style="font-family:var(--font-mono); font-weight:600;"></span>
+            </div>
+          </div>
+        </details>
+
+        <details class="group" open>
+          <summary>Agencia / consultoría</summary>
+          <div class="group-body">
+            <div class="field">
+              <label class="flabel" for="agencyFixed">Fee fijo mensual (base pactada)</label>
+              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                <input type="number" id="agencyFixed" min="0" step="10">
+              </div>
+            </div>
+            <div class="field">
+              <label class="flabel" for="agencyVarPct">Fee variable — tu comisión (% s/ margen de contribución)</label>
+              <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                <input type="number" id="agencyVarPct" min="0" max="100" step="1">
+              </div>
+              <span class="fnote">Esta es la comisión que "El piso de equilibrio" te ayuda a posponer hasta que el cliente cubra sus costos.</span>
+            </div>
+          </div>
+        </details>
+
+        <details class="group">
+          <summary>Impuestos</summary>
+          <div class="group-body">
+            <div class="field">
+              <div class="field-row">
+                <input type="checkbox" id="vatOn">
+                <label class="flabel" for="vatPct" style="flex:1">IVA / VAT (pass-through, % s/ precio final)</label>
+              </div>
+              <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                <input type="number" id="vatPct" min="0" max="100" step="0.5">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-row">
+                <input type="checkbox" id="turnoverOn">
+                <label class="flabel" for="turnoverPct" style="flex:1">Ingresos brutos / turnover tax (% s/ ingresos netos de IVA)</label>
+              </div>
+              <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                <input type="number" id="turnoverPct" min="0" max="100" step="0.1">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-row">
+                <input type="checkbox" id="incomeTaxOn">
+                <label class="flabel" for="incomeTaxPct" style="flex:1">Impuesto a las ganancias (% s/ utilidad operativa)</label>
+              </div>
+              <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                <input type="number" id="incomeTaxPct" min="0" max="100" step="1">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-row">
+                <input type="checkbox" id="bankTaxOn">
+                <label class="flabel" for="bankTaxPct" style="flex:1">Imp. a créditos/débitos bancarios, neto (% s/ facturación)</label>
+              </div>
+              <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                <input type="number" id="bankTaxPct" min="0" max="100" step="0.1">
+              </div>
+            </div>
+            <span class="fnote">Destildá los que no apliquen a tu país o régimen fiscal — el cálculo los ignora.</span>
+          </div>
+        </details>
+      </div>
+    </aside>
+
+    <main class="results">
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Escenario</h2>
+          <p class="card-sub">Elegí qué métrica querés usar como punto de partida: facturación, utilidad neta que el cliente quiere lograr, inversión en pauta, CAC o ROAS. Las demás se recalculan solas.</p>
+        </div>
+        <div class="card-body">
+          <div class="scenario-top">
+            <div class="scenario-revenue">
+              <label for="scenarioRevenue">Facturación mensual objetivo</label>
+              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                <input type="number" id="scenarioRevenue" min="0" step="500">
+              </div>
+            </div>
+            <div class="scenario-revenue">
+              <label for="targetNetProfitInput">Utilidad neta mensual que el cliente quiere lograr</label>
+              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                <input type="number" id="targetNetProfitInput" step="100">
+              </div>
+            </div>
+            <div>
+              <span class="segmented-label">Definir pauta por</span>
+              <div class="segmented" id="modeSegmented">
+                <button type="button" data-mode="adspend">Inversión US$</button>
+                <button type="button" data-mode="cac">CAC objetivo</button>
+                <button type="button" data-mode="roas">ROAS objetivo</button>
+              </div>
+            </div>
+          </div>
+          <span class="fnote">Facturación y utilidad neta están enlazadas: cambiar una recalcula la otra al toque, manteniendo el CAC/ROAS actual.</span>
+          <div class="stat-grid" id="scenarioStats"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Punto de equilibrio</h2>
+          <p class="card-sub">A la eficiencia de pauta del escenario de arriba, esto es lo que el negocio necesita facturar para no perder plata.</p>
+        </div>
+        <div class="card-body">
+          <div class="breakeven-grid" id="breakevenGrid"></div>
+          <div class="gauge" id="gaugeHost"></div>
+          <div class="implied-row" id="impliedRow"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>P&amp;L — piso vs. escenario actual</h2>
+        </div>
+        <div class="table-wrap">
+          <table class="pl pl-scenario" id="plScenarioTable"></table>
+        </div>
+      </div>
+
+      <details class="collapsible">
+        <summary>
+          <div>
+            <h2>Plan de escalado mensual (opcional)</h2>
+            <p class="card-sub">Si además querés mapear una rampa mes a mes hacia el escenario de arriba.</p>
+          </div>
+          <span class="toggle-hint">Ver</span>
+        </summary>
+        <div class="collapsible-body">
+
+          <div>
+            <div class="chart-legend" style="margin-bottom:10px;">
+              <span><span class="dot" style="background:var(--accent-soft); border:1px solid var(--accent)"></span>Facturación</span>
+              <span><span class="dot" style="background:var(--good)"></span>Utilidad neta</span>
+            </div>
+            <div id="chartHost"></div>
+          </div>
+
+          <div>
+            <div class="table-wrap">
+              <table class="ramp-table" id="rampTable"></table>
+            </div>
+            <div class="ramp-actions">
+              <button class="btn" id="addMonthBtn">+ Agregar mes</button>
+              <button class="btn ghost" id="removeMonthBtn">– Quitar último mes</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="table-wrap">
+              <table class="pl" id="plTable"></table>
+            </div>
+          </div>
+
+        </div>
+      </details>
+
+    </main>
+  </div>
+
+  <footer class="note">
+    <strong>Cómo se calcula:</strong> unidades = facturación / ticket promedio · IVA se descuenta del precio final para obtener ingresos netos · COGS se aplica como % de la facturación o como precio por unidad × unidades vendidas, según el modo elegido, y las comisiones se aplican sobre la facturación bruta · el margen de contribución resta comisiones, envío y pauta de la utilidad bruta · el fee variable de agencia y el impuesto a las ganancias parten de esa base, con piso en cero. Todos los montos se guardan en dólares y se convierten a pesos con el tipo de cambio que definas si elegís ver la calculadora en ARS. El punto de equilibrio se calcula manteniendo fijo el CAC/ROAS actual del escenario — no el campo que hayas elegido para editar en "Definir pauta por" — y despejando la facturación en la que la utilidad operativa da cero. Por eso cambiar de Inversión US$/CAC/ROAS no mueve el piso: sólo lo mueve editar un valor. Los valores de partida replican un modelo de ejemplo para e-commerce de moda/accesorios en Argentina; reemplazalos por los datos reales de tu negocio. Tus datos se guardan solo en este navegador — no se envían a ningún servidor.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var DEFAULTS = {
+    biz: "Mi negocio de e-commerce",
+    a: {
+      aov: 105,
+      cogsMode: "pct",
+      cogsPct: 30,
+      cogsPerUnit: 31.5,
+      shipping: 6,
+      gatewayPct: 8,
+      platformPct: 1,
+      platformFee: 50,
+      agencyFixed: 800,
+      agencyVarPct: 25,
+      vatOn: true, vatPct: 21,
+      turnoverOn: true, turnoverPct: 3.5,
+      incomeTaxOn: true, incomeTaxPct: 35,
+      bankTaxOn: true, bankTaxPct: 0.8
+    },
+    scenario: {
+      revenue: 50000,
+      mode: "adspend",
+      driver: 7500
+    },
+    months: [
+      { label: "Mes 1", revenue: 20000, adSpend: 4800 },
+      { label: "Mes 2", revenue: 30000, adSpend: 6000 },
+      { label: "Mes 3", revenue: 40000, adSpend: 6800 },
+      { label: "Mes 4", revenue: 50000, adSpend: 7500 }
+    ],
+    display: {
+      currency: "USD",
+      fx: 1450
+    },
+    fixedCosts: [
+      { label: "Sueldos / equipo", amount: 0 },
+      { label: "Alquiler / oficina", amount: 0 }
+    ]
+  };
+
+  var STORAGE_KEY = "rampa-rentabilidad-state-v6";
+  var state = loadState();
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(DEFAULTS));
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.a || !parsed.scenario || !parsed.display || !Array.isArray(parsed.months) || !parsed.months.length || !Array.isArray(parsed.fixedCosts)) {
+        return JSON.parse(JSON.stringify(DEFAULTS));
+      }
+      return parsed;
+    }catch(e){
+      return JSON.parse(JSON.stringify(DEFAULTS));
+    }
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  var fmtUsd0 = new Intl.NumberFormat("es-AR", { style:"currency", currency:"USD", maximumFractionDigits:0, minimumFractionDigits:0 });
+  var fmtUsd2 = new Intl.NumberFormat("es-AR", { style:"currency", currency:"USD", maximumFractionDigits:2, minimumFractionDigits:2 });
+  var fmtArs0 = new Intl.NumberFormat("es-AR", { style:"currency", currency:"ARS", maximumFractionDigits:0, minimumFractionDigits:0 });
+  var fmtArs2 = new Intl.NumberFormat("es-AR", { style:"currency", currency:"ARS", maximumFractionDigits:2, minimumFractionDigits:2 });
+  var fmtNumber0 = new Intl.NumberFormat("es-AR", { maximumFractionDigits:0 });
+  var fmtPct1 = new Intl.NumberFormat("es-AR", { style:"percent", maximumFractionDigits:1, minimumFractionDigits:1 });
+
+  // Every stored monetary value lives in USD internally; these two helpers move a raw
+  // number across the USD<->display-currency boundary at render time and at input time.
+  function usdToDisplay(usd){
+    return state.display.currency === "ARS" ? usd * state.display.fx : usd;
+  }
+  function displayToUsd(displayVal){
+    return state.display.currency === "ARS" ? displayVal / (state.display.fx || 1) : displayVal;
+  }
+
+  // money0/money2 format a USD amount in whichever currency the user picked to view — used
+  // only for read-only display text, never for the underlying math (which always stays USD).
+  function money0(v){
+    if (!isFinite(v)) return "—";
+    return state.display.currency === "ARS" ? fmtArs0.format(v*state.display.fx) : fmtUsd0.format(v);
+  }
+  function money2(v){
+    if (!isFinite(v)) return "—";
+    return state.display.currency === "ARS" ? fmtArs2.format(v*state.display.fx) : fmtUsd2.format(v);
+  }
+  function num0(v){ return isFinite(v) ? fmtNumber0.format(v) : "—"; }
+  function pct1(v){ return isFinite(v) ? fmtPct1.format(v) : "—"; }
+  function xTimes(v){ return isFinite(v) ? (v.toFixed(1) + "×") : "—"; }
+
+  // The "$" prefix next to every editable money input (sidebar, escenario, tabla de rampa) is
+  // plain static text, not run through money0/money2 — keep it in sync with the currency toggle.
+  function currencyPrefixLabel(){ return state.display.currency === "ARS" ? "AR$" : "US$"; }
+  function syncCurrencyPrefixes(){
+    // The tipo de cambio field is always expressed in ARS-per-USD, regardless of the toggle — skip it.
+    document.querySelectorAll(".prefix").forEach(function(el){
+      if (el.closest("#fxFieldWrap")) return;
+      el.textContent = currencyPrefixLabel();
+    });
+  }
+
+  // The client's own overhead (sueldos, oficina, etc.) — a flat monthly total, independent
+  // of revenue. Read via closure rather than threaded through computeLine's signature.
+  function sumFixedCosts(){
+    return (state.fixedCosts||[]).reduce(function(sum, item){ return sum + (Number(item.amount)||0); }, 0);
+  }
+
+  // ---------------- Core P&L formula (shared by scenario, breakeven solver, and ramp months) ----------------
+  function computeLine(a, revenue, adSpend, opts){
+    opts = opts || {};
+    var cogsPct = a.cogsPct/100, gatewayPct = a.gatewayPct/100, platformPct = a.platformPct/100;
+    var agencyVarPct = a.agencyVarPct/100, vatPct = a.vatPct/100, turnoverPct = a.turnoverPct/100;
+    var incomeTaxPct = a.incomeTaxPct/100, bankTaxPct = a.bankTaxPct/100;
+
+    var grossRevenue = revenue;
+    var units = a.aov > 0 ? grossRevenue / a.aov : 0;
+
+    var vatAmount = a.vatOn ? (grossRevenue - grossRevenue/(1+vatPct)) : 0;
+    var netRevenue = grossRevenue - vatAmount;
+    var cogs = a.cogsMode === "perUnit" ? units * (a.cogsPerUnit||0) : grossRevenue * cogsPct;
+    var grossProfit = netRevenue - cogs;
+
+    var gatewayFee = grossRevenue * gatewayPct;
+    var platformFeePct = grossRevenue * platformPct;
+    var shippingCost = units * a.shipping;
+
+    var cac = units > 0 ? (adSpend / units) : NaN;
+    var roas = adSpend > 0 ? (grossRevenue / adSpend) : NaN;
+
+    var contributionMargin = grossProfit - gatewayFee - platformFeePct - shippingCost - adSpend;
+
+    var fixedCosts = sumFixedCosts();
+    var agencyFixed = a.agencyFixed;
+    var agencyVariable = opts.excludeAgencyVariable ? 0 : (contributionMargin * agencyVarPct);
+    var platformFeeFixed = a.platformFee;
+    var turnoverTax = a.turnoverOn ? (netRevenue * turnoverPct) : 0;
+    var bankTax = a.bankTaxOn ? (grossRevenue * bankTaxPct) : 0;
+
+    var operatingProfitBeforeTax = contributionMargin - fixedCosts - agencyFixed - agencyVariable - platformFeeFixed - turnoverTax - bankTax;
+    var incomeTax = a.incomeTaxOn ? (Math.max(operatingProfitBeforeTax,0) * incomeTaxPct) : 0;
+    var netProfit = operatingProfitBeforeTax - incomeTax;
+
+    return {
+      grossRevenue: grossRevenue, units: units, vatAmount: vatAmount,
+      netRevenue: netRevenue, cogs: cogs, grossProfit: grossProfit, gatewayFee: gatewayFee,
+      platformFeePct: platformFeePct, shippingCost: shippingCost, cac: cac, roas: roas,
+      adSpend: adSpend, contributionMargin: contributionMargin, fixedCosts: fixedCosts,
+      agencyFixed: agencyFixed, agencyVariable: agencyVariable, platformFeeFixed: platformFeeFixed,
+      turnoverTax: turnoverTax, bankTax: bankTax, operatingProfitBeforeTax: operatingProfitBeforeTax,
+      incomeTax: incomeTax, netProfit: netProfit
+    };
+  }
+
+  // Given a target revenue and how you want to size the pauta (fixed $, CAC objetivo or ROAS objetivo), what ad spend that implies.
+  function computeAdSpend(revenue, mode, driver, aov){
+    var units = aov > 0 ? revenue/aov : 0;
+    if (mode === "adspend") return Math.max(0, driver);
+    if (mode === "cac") return Math.max(0, driver) * units;
+    if (mode === "roas") return driver > 0 ? revenue/driver : 0;
+    return 0;
+  }
+
+  function computeScenarioLine(){
+    var s = state.scenario;
+    var adSpend = computeAdSpend(s.revenue, s.mode, s.driver, state.a.aov);
+    return computeLine(state.a, s.revenue, adSpend);
+  }
+
+  // The breakeven card always assumes pauta scales with revenue at the scenario's CURRENT
+  // CAC/ROAS efficiency — regardless of which field "Definir pauta por" has selected for editing.
+  // That keeps the breakeven numbers stable when you just switch modes without changing any value;
+  // only actually editing revenue, pauta, CAC or ROAS should move the floor.
+  function currentEfficiencyForBreakeven(){
+    var line = computeScenarioLine();
+    return { mode: "cac", driver: isFinite(line.cac) ? line.cac : 0 };
+  }
+
+  // Exact breakeven revenue for a fixed ad-spend "efficiency" (mode+driver): operatingProfitBeforeTax
+  // is affine in revenue for any mode, so two sample points fully determine the root.
+  function solveBreakeven(mode, driver, excludeAgencyVariable){
+    var aov = state.a.aov;
+    function metricAt(R){
+      var adSpend = computeAdSpend(R, mode, driver, aov);
+      return computeLine(state.a, R, adSpend, { excludeAgencyVariable: excludeAgencyVariable }).operatingProfitBeforeTax;
+    }
+    var R1 = 1000, R2 = 1000000;
+    var f1 = metricAt(R1), f2 = metricAt(R2);
+    var slope = (f2 - f1) / (R2 - R1);
+    if (!isFinite(slope) || Math.abs(slope) < 1e-9) return null;
+    var intercept = f1 - slope*R1;
+    var root = -intercept/slope;
+    if (!isFinite(root) || root <= 0) return null;
+    return root;
+  }
+
+  // Revenue needed to hit a target monthly UTILIDAD NETA (after income tax), holding the
+  // scenario's ad-spend efficiency fixed. operatingProfitBeforeTax(R) is affine in R (same
+  // two-point trick as solveBreakeven); netProfit only bends away from it once tax kicks in
+  // above zero, so we first work out which operatingProfitBeforeTax the target implies, then
+  // solve that affine equation directly instead of fitting the piecewise netProfit curve.
+  function solveRevenueForNetProfit(mode, driver, targetNetProfit){
+    var aov = state.a.aov;
+    function opProfitAt(R){
+      var adSpend = computeAdSpend(R, mode, driver, aov);
+      return computeLine(state.a, R, adSpend).operatingProfitBeforeTax;
+    }
+    var R1 = 1000, R2 = 1000000;
+    var f1 = opProfitAt(R1), f2 = opProfitAt(R2);
+    var slope = (f2 - f1) / (R2 - R1);
+    if (!isFinite(slope) || Math.abs(slope) < 1e-9) return null;
+    var intercept = f1 - slope*R1;
+
+    var taxRate = state.a.incomeTaxOn ? state.a.incomeTaxPct/100 : 0;
+    var requiredOpProfit;
+    if (targetNetProfit <= 0){
+      requiredOpProfit = targetNetProfit;
+    } else {
+      if (taxRate >= 1) return null;
+      requiredOpProfit = targetNetProfit / (1 - taxRate);
+    }
+    var root = (requiredOpProfit - intercept) / slope;
+    if (!isFinite(root) || root <= 0) return null;
+    return root;
+  }
+
+  // ---------------- Ramp (optional monthly plan) ----------------
+  function computeRamp(){
+    var rows = state.months.map(function(m){
+      var line = computeLine(state.a, Number(m.revenue)||0, Number(m.adSpend)||0);
+      line.label = m.label;
+      return line;
+    });
+    var totals = rows.reduce(function(acc, r){
+      Object.keys(r).forEach(function(k){
+        if (k === "label" || k === "cac" || k === "roas") return;
+        acc[k] = (acc[k]||0) + r[k];
+      });
+      return acc;
+    }, {});
+    totals.label = "Total";
+    totals.cac = totals.units > 0 ? (totals.adSpend/totals.units) : NaN;
+    totals.roas = totals.adSpend > 0 ? (totals.grossRevenue/totals.adSpend) : NaN;
+    return { rows: rows, totals: totals };
+  }
+
+  // ---------------- KPIs ----------------
+  function renderKPIs(){
+    var line = computeScenarioLine();
+    var margin = line.grossRevenue > 0 ? (line.netProfit/line.grossRevenue) : NaN;
+    var eff = currentEfficiencyForBreakeven();
+    var floor = solveBreakeven(eff.mode, eff.driver, true);
+
+    var cards = [
+      { label: "Facturación del escenario", value: money0(line.grossRevenue), cls:"" },
+      { label: "Utilidad neta del escenario", value: money0(line.netProfit), cls: line.netProfit >= 0 ? "good" : "bad" },
+      { label: "Margen neto del escenario", value: pct1(margin), cls: margin >= 0 ? "good" : "bad" },
+      { label: "Piso antes de tu comisión", value: floor ? money0(floor) : "No se alcanza", cls: floor ? "" : "bad",
+        hint: floor ? (line.grossRevenue >= floor ? "El escenario ya lo supera" : "El escenario está por debajo") : "Con el CAC/ROAS actual, ajustalo para encontrar un piso" }
+    ];
+
+    document.getElementById("kpiRow").innerHTML = cards.map(function(c){
+      return '<div class="kpi"><div class="label">'+c.label+'</div><div class="value '+c.cls+'">'+c.value+'</div>'+
+        (c.hint ? '<div class="hint">'+c.hint+'</div>' : '') + '</div>';
+    }).join("");
+  }
+
+  // ---------------- Scenario card ----------------
+  function renderScenario(){
+    var s = state.scenario;
+    document.getElementById("scenarioRevenue").value = round2(usdToDisplay(s.revenue));
+
+    var buttons = document.querySelectorAll("#modeSegmented button");
+    buttons.forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-mode") === s.mode); });
+
+    var line = computeScenarioLine();
+    var boxes = [
+      { key:"units", label:"Unidades", isDriver:false, display: num0(line.units) },
+      { key:"adspend", label:"Inversión en pauta", isDriver: s.mode==="adspend", display: money0(line.adSpend), prefix:currencyPrefixLabel(), step:100, isMoney:true },
+      { key:"cac", label:"CAC ("+currencyPrefixLabel()+"/unidad)", isDriver: s.mode==="cac", display: money2(line.cac), prefix:currencyPrefixLabel(), step:0.5, isMoney:true },
+      { key:"roas", label:"ROAS", isDriver: s.mode==="roas", display: xTimes(line.roas), suffix:"×", step:0.1, isMoney:false }
+    ];
+
+    var html = boxes.map(function(b){
+      var inner;
+      if (b.isDriver){
+        var displayVal = round2(b.isMoney ? usdToDisplay(s.driver) : s.driver);
+        inner = '<div class="num-wrap '+(b.prefix?'has-prefix':'has-suffix')+'">'+
+          (b.prefix ? '<span class="prefix">'+b.prefix+'</span>' : '<span class="suffix">'+b.suffix+'</span>') +
+          '<input type="number" id="driverInput" min="0" step="'+b.step+'" value="'+displayVal+'"></div>';
+      } else {
+        inner = '<div class="stat-value" data-statkey="'+b.key+'">'+b.display+'</div>';
+      }
+      return '<div class="stat-box'+(b.isDriver?' driver':'')+'">'+
+        '<div class="stat-label"><span>'+b.label+'</span>'+(b.isDriver?'<span class="edit-tag">EDITABLE</span>':'')+'</div>'+
+        inner + '</div>';
+    }).join("");
+
+    document.getElementById("scenarioStats").innerHTML = html;
+    renderTargetProfitInput();
+  }
+
+  function renderScenarioComputedOnly(){
+    var s = state.scenario;
+    var line = computeScenarioLine();
+    renderTargetProfitInput();
+    var map = { units: num0(line.units), adspend: money0(line.adSpend), cac: money2(line.cac), roas: xTimes(line.roas) };
+    Object.keys(map).forEach(function(k){
+      if ((k==="adspend" && s.mode==="adspend") || (k==="cac" && s.mode==="cac") || (k==="roas" && s.mode==="roas")) return;
+      var el = document.querySelector('.stat-value[data-statkey="'+k+'"]');
+      if (el) el.textContent = map[k];
+    });
+  }
+
+  // ---------------- Breakeven card ----------------
+  function renderBreakeven(){
+    var line = computeScenarioLine();
+    var eff = currentEfficiencyForBreakeven();
+    var floorExclFee = solveBreakeven(eff.mode, eff.driver, true);
+    var floorFull = solveBreakeven(eff.mode, eff.driver, false);
+
+    var mainCls = floorExclFee ? "" : "unreachable";
+    var mainHtml =
+      '<div class="breakeven-main '+mainCls+'">' +
+        '<div class="be-label">Piso antes de tu comisión variable</div>' +
+        '<div class="be-figure">'+ (floorExclFee ? money0(floorExclFee) : "No se alcanza con esta eficiencia de pauta") +'</div>' +
+        '<div class="be-sub">' + (floorExclFee
+          ? "Facturación mínima para que el negocio cubra COGS, comisiones, envío, pauta, tu fee fijo y los impuestos — sin que vos todavía te lleves comisión variable. A partir de acá, lo que cobres sale de ganancia real. Se calcula manteniendo el CAC/ROAS actual del escenario a cualquier nivel de facturación — no depende de qué campo estés editando arriba."
+          : "Con el CAC/ROAS actual, los costos superan lo que deja la venta a cualquier nivel de facturación. Mejorá la eficiencia de pauta (subí el ROAS o bajá el CAC) para encontrar un piso viable.") +
+        '</div>' +
+      '</div>';
+
+    var secondaryHtml =
+      '<div class="breakeven-secondary">' +
+        '<div class="be-label">Punto de equilibrio total (con tu comisión incluida)</div>' +
+        '<div class="be-figure">' + (floorFull ? money0(floorFull) : "—") + '</div>' +
+        '<div class="be-sub">Facturación mínima para que la utilidad neta del negocio sea cero, ya pagando también tu fee variable.</div>' +
+      '</div>';
+
+    document.getElementById("breakevenGrid").innerHTML = mainHtml + secondaryHtml;
+
+    // Gauge: current scenario revenue vs. the negotiation floor
+    var gaugeHost = document.getElementById("gaugeHost");
+    if (!floorExclFee){
+      gaugeHost.innerHTML = "";
+    } else {
+      var scaleMax = Math.max(line.grossRevenue, floorExclFee) * 1.2;
+      var fillPct = Math.min(100, (line.grossRevenue/scaleMax)*100);
+      var markerPct = Math.min(100, (floorExclFee/scaleMax)*100);
+      var below = line.grossRevenue < floorExclFee;
+      gaugeHost.innerHTML =
+        '<div class="gauge-track">' +
+          '<div class="gauge-fill'+(below?' below':'')+'" style="width:'+fillPct+'%"></div>' +
+          '<div class="gauge-marker" style="left:'+markerPct+'%"><span class="gauge-marker-label">Piso '+money0(floorExclFee)+'</span></div>' +
+        '</div>' +
+        '<div class="gauge-scale"><span>US$0</span><span>Escenario: '+money0(line.grossRevenue)+'</span><span>'+money0(scaleMax)+'</span></div>';
+    }
+
+    // Implied stats at the floor, holding the same ad-spend efficiency
+    var impliedHost = document.getElementById("impliedRow");
+    if (!floorExclFee){
+      impliedHost.innerHTML = "";
+    } else {
+      var adSpendAtFloor = computeAdSpend(floorExclFee, eff.mode, eff.driver, state.a.aov);
+      var lineAtFloor = computeLine(state.a, floorExclFee, adSpendAtFloor, { excludeAgencyVariable:true });
+      var items = [
+        { label:"Unidades en el piso", value: num0(lineAtFloor.units) },
+        { label:"Inversión en pauta en el piso", value: money0(lineAtFloor.adSpend) },
+        { label:"CAC en el piso", value: money2(lineAtFloor.cac) },
+        { label:"ROAS en el piso", value: xTimes(lineAtFloor.roas) }
+      ];
+      impliedHost.innerHTML = items.map(function(it){
+        return '<div class="implied-item">'+it.label+'<strong>'+it.value+'</strong></div>';
+      }).join("");
+    }
+  }
+
+  // "Utilidad neta objetivo" is not stored separately — it's always a live mirror of the
+  // scenario's actual net profit. Typing into it solves backwards for the required revenue
+  // (holding CAC/ROAS fixed) and writes that into state.scenario, same as any other driver.
+  function renderTargetProfitInput(){
+    document.getElementById("targetNetProfitInput").value = round2(usdToDisplay(computeScenarioLine().netProfit));
+  }
+
+  // ---------------- Scenario P&L: piso vs. escenario actual ----------------
+  var PL_ROWS = [
+    { key:"grossRevenue", label:"Facturación bruta (precio final)", fmt:money0 },
+    { key:"units", label:"Unidades vendidas", fmt:num0 },
+    { key:"vatAmount", label:"(–) IVA débito fiscal", fmt:money0 },
+    { key:"netRevenue", label:"▸ Ingresos netos de IVA", fmt:money0, subtotal:true },
+    { key:"cogs", label:"(–) COGS", fmt:money0 },
+    { key:"grossProfit", label:"▸ Utilidad bruta", fmt:money0, subtotal:true },
+    { key:"gatewayFee", label:"(–) Comisión pasarela de pago + cuotas", fmt:money0 },
+    { key:"platformFeePct", label:"(–) Comisión ecommerce por pasarela externa", fmt:money0 },
+    { key:"shippingCost", label:"(–) Costo de envío gratis", fmt:money0 },
+    { key:"cac", label:"CAC estimado (US$ por unidad)", fmt:money2, info:true },
+    { key:"roas", label:"ROAS estimado (facturación / pauta)", fmt:xTimes, info:true },
+    { key:"adSpend", label:"(–) Inversión en pauta", fmt:money0 },
+    { key:"contributionMargin", label:"▸ Margen de contribución", fmt:money0, subtotal:true },
+    { key:"fixedCosts", label:"(–) Costos fijos del cliente (sueldos, oficina, etc.)", fmt:money0 },
+    { key:"agencyFixed", label:"(–) Agencia — fee fijo mensual", fmt:money0 },
+    { key:"agencyVariable", label:"(–) Agencia — fee variable (% s/ margen)", fmt:money0 },
+    { key:"platformFeeFixed", label:"(–) Fee mensual plataforma ecommerce", fmt:money0 },
+    { key:"turnoverTax", label:"(–) Ingresos brutos / turnover tax", fmt:money0 },
+    { key:"bankTax", label:"(–) Imp. créditos/débitos bancarios", fmt:money0 },
+    { key:"operatingProfitBeforeTax", label:"▸ Utilidad operativa antes de imp. a las ganancias", fmt:money0, subtotal:true },
+    { key:"incomeTax", label:"(–) Impuesto a las ganancias", fmt:money0 },
+    { key:"netProfit", label:"▸ UTILIDAD NETA", fmt:money0, net:true }
+  ];
+
+  function renderScenarioPL(){
+    var current = computeScenarioLine();
+    var eff = currentEfficiencyForBreakeven();
+
+    var floorExclFee = solveBreakeven(eff.mode, eff.driver, true);
+    var floorLine = null;
+    if (floorExclFee){
+      var adSpendAtFloor = computeAdSpend(floorExclFee, eff.mode, eff.driver, state.a.aov);
+      floorLine = computeLine(state.a, floorExclFee, adSpendAtFloor, { excludeAgencyVariable:true });
+    }
+
+    var head = '<thead><tr><th>Concepto</th><th class="col-total">Piso de equilibrio</th><th class="col-current">Escenario actual</th></tr></thead>';
+    var body = PL_ROWS.map(function(spec){
+      var rowClass = spec.net ? "net" : (spec.subtotal ? "subtotal" : (spec.info ? "info" : ""));
+      var floorVal = floorLine ? floorLine[spec.key] : NaN;
+      var curVal = current[spec.key];
+      var floorCls = "col-total" + ((!spec.info && floorVal < 0) ? " neg" : "");
+      var curCls = "col-current" + ((!spec.info && curVal < 0) ? " neg" : "");
+      return '<tr class="'+rowClass+'"><td>'+spec.label+'</td>' +
+        '<td class="'+floorCls+'">'+ (floorLine ? spec.fmt(floorVal) : "—") +'</td>' +
+        '<td class="'+curCls+'">'+ spec.fmt(curVal) +'</td></tr>';
+    }).join("");
+
+    document.getElementById("plScenarioTable").innerHTML = head + '<tbody>'+body+'</tbody>';
+  }
+
+  // ---------------- Chart (optional ramp) ----------------
+  function renderChart(data){
+    var rows = data.rows;
+    var host = document.getElementById("chartHost");
+    if (!rows.length){ host.innerHTML = ""; return; }
+
+    var W = 900, H = 260, padL = 56, padR = 16, padT = 16, padB = 34;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var n = rows.length;
+    var maxRevenue = Math.max.apply(null, rows.map(function(r){return r.grossRevenue;}).concat([1]));
+    var maxProfitAbs = Math.max.apply(null, rows.map(function(r){return Math.abs(r.netProfit);}).concat([1]));
+    var maxVal = Math.max(maxRevenue, maxProfitAbs) * 1.15;
+
+    var slot = plotW / n;
+    var barW = Math.min(48, slot * 0.5);
+
+    function xPos(i){ return padL + slot*i + slot/2; }
+    function yPos(v){ return padT + plotH - (v/maxVal)*plotH; }
+
+    var gridLines = "";
+    var steps = 4;
+    for (var g=0; g<=steps; g++){
+      var gv = maxVal * g/steps;
+      var gy = yPos(gv);
+      gridLines += '<line class="grid" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"></line>';
+      gridLines += '<text x="'+(padL-8)+'" y="'+(gy+3)+'" text-anchor="end" font-size="10">'+money0(gv)+'</text>';
+    }
+
+    var bars = "", labels = "", linePts = [], dots = "";
+    rows.forEach(function(r, i){
+      var cx = xPos(i);
+      var by = yPos(r.grossRevenue);
+      bars += '<rect class="bar" x="'+(cx-barW/2)+'" y="'+by+'" width="'+barW+'" height="'+(padT+plotH-by)+'" rx="3"></rect>';
+      bars += '<text class="bar-label" x="'+cx+'" y="'+(by-6)+'" text-anchor="middle">'+money0(r.grossRevenue)+'</text>';
+      labels += '<text class="axis-label" x="'+cx+'" y="'+(H-10)+'" text-anchor="middle">'+r.label+'</text>';
+      var py = yPos(r.netProfit);
+      linePts.push(cx+","+py);
+      dots += '<circle class="'+(r.netProfit>=0?"dot-good":"dot-bad")+'" cx="'+cx+'" cy="'+py+'" r="3.5"></circle>';
+      dots += '<text x="'+cx+'" y="'+(py - 10)+'" text-anchor="middle" font-size="10" fill="'+(r.netProfit>=0?"var(--good)":"var(--bad)")+'">'+money0(r.netProfit)+'</text>';
+    });
+
+    var zeroY = yPos(0);
+    var zeroLine = '<line x1="'+padL+'" y1="'+zeroY+'" x2="'+(W-padR)+'" y2="'+zeroY+'" stroke="var(--border)" stroke-dasharray="3,3"></line>';
+    var polyline = '<polyline class="line-good" points="'+linePts.join(" ")+'" fill="none" stroke-width="2"></polyline>';
+
+    var svg = '<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+
+      gridLines + zeroLine + bars + polyline + dots + labels + '</svg>';
+    host.innerHTML = svg;
+  }
+
+  // ---------------- Ramp table ----------------
+  function renderRampTable(data){
+    var thead = '<thead><tr><th>Mes</th><th>Facturación objetivo</th><th>Inversión en pauta</th>'+
+      '<th>Unidades</th><th>CAC</th><th>ROAS</th></tr></thead>';
+    var body = state.months.map(function(m, i){
+      var r = data.rows[i];
+      return '<tr>'+
+        '<td><input type="text" class="plain" data-field="label" data-idx="'+i+'" value="'+escapeAttr(m.label)+'"></td>'+
+        '<td><div class="num-wrap has-prefix"><span class="prefix">'+currencyPrefixLabel()+'</span><input type="number" min="0" step="100" data-field="revenue" data-idx="'+i+'" value="'+round2(usdToDisplay(m.revenue))+'"></div></td>'+
+        '<td><div class="num-wrap has-prefix"><span class="prefix">'+currencyPrefixLabel()+'</span><input type="number" min="0" step="50" data-field="adSpend" data-idx="'+i+'" value="'+round2(usdToDisplay(m.adSpend))+'"></div></td>'+
+        '<td>'+num0(r.units)+'</td>'+
+        '<td>'+money2(r.cac)+'</td>'+
+        '<td>'+xTimes(r.roas)+'</td>'+
+        '</tr>';
+    }).join("");
+    document.getElementById("rampTable").innerHTML = thead + '<tbody>'+body+'</tbody>';
+  }
+
+  function escapeAttr(s){
+    return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  }
+
+  // ---------------- Fixed costs (client overhead) ----------------
+  function renderFixedCostsField(){
+    var host = document.getElementById("fixedCostsList");
+    host.innerHTML = state.fixedCosts.map(function(item, i){
+      return '<div class="fixed-cost-row">'+
+        '<input type="text" class="plain" data-field="label" data-idx="'+i+'" value="'+escapeAttr(item.label)+'" placeholder="Concepto">'+
+        '<div class="num-wrap has-prefix"><span class="prefix">'+currencyPrefixLabel()+'</span>'+
+          '<input type="number" min="0" step="10" data-field="amount" data-idx="'+i+'" value="'+round2(usdToDisplay(item.amount))+'"></div>'+
+        '<button type="button" class="remove-btn" data-remove-idx="'+i+'" title="Quitar">×</button>'+
+      '</div>';
+    }).join("");
+    updateFixedCostsTotal();
+  }
+
+  function updateFixedCostsTotal(){
+    document.getElementById("fixedCostsTotal").textContent = money0(sumFixedCosts());
+  }
+
+  function bindFixedCostsEvents(){
+    document.getElementById("fixedCostsList").addEventListener("input", function(e){
+      var idx = e.target.getAttribute("data-idx");
+      var field = e.target.getAttribute("data-field");
+      if (idx === null || !field) return;
+      idx = parseInt(idx, 10);
+      if (field === "label"){
+        state.fixedCosts[idx].label = e.target.value;
+      } else {
+        var v = displayToUsd(parseFloat(e.target.value));
+        state.fixedCosts[idx].amount = isNaN(v) ? 0 : v;
+        updateFixedCostsTotal();
+      }
+      saveState(); renderAll();
+    });
+    document.getElementById("fixedCostsList").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-remove-idx]");
+      if (!btn) return;
+      var idx = parseInt(btn.getAttribute("data-remove-idx"), 10);
+      state.fixedCosts.splice(idx, 1);
+      saveState(); renderFixedCostsField(); renderAll();
+    });
+    document.getElementById("addFixedCostBtn").addEventListener("click", function(){
+      state.fixedCosts.push({ label: "Nuevo costo fijo", amount: 0 });
+      saveState(); renderFixedCostsField(); renderAll();
+    });
+  }
+
+  function renderRampPLTable(data){
+    var head = '<thead><tr><th>Concepto</th>' +
+      data.rows.map(function(r){ return '<th>'+r.label+'</th>'; }).join("") +
+      '<th class="col-total">Total</th></tr></thead>';
+
+    var body = PL_ROWS.map(function(spec){
+      var rowClass = spec.net ? "net" : (spec.subtotal ? "subtotal" : (spec.info ? "info" : ""));
+      var cells = data.rows.map(function(r){
+        var v = r[spec.key];
+        var cls = "";
+        if (!spec.info && typeof v === "number"){ cls = v < 0 ? "neg" : (spec.net && v>0 ? "pos" : ""); }
+        return '<td class="'+cls+'">'+spec.fmt(v)+'</td>';
+      }).join("");
+      var totalVal = spec.info ? (spec.key === "cac" ? data.totals.cac : data.totals.roas) : data.totals[spec.key];
+      var totalCls = "col-total" + ((!spec.info && totalVal < 0) ? " neg" : "");
+      var totalCell = '<td class="'+totalCls+'">'+spec.fmt(totalVal)+'</td>';
+      return '<tr class="'+rowClass+'"><td>'+spec.label+'</td>'+cells+totalCell+'</tr>';
+    }).join("");
+
+    document.getElementById("plTable").innerHTML = head + '<tbody>'+body+'</tbody>';
+  }
+
+  // ---------------- Wiring assumptions ----------------
+  var PCT_FIELDS = ["gatewayPct","platformPct","agencyVarPct","vatPct","turnoverPct","incomeTaxPct","bankTaxPct"];
+  var NUM_FIELDS = ["aov","shipping","platformFee","agencyFixed"];
+  var CHECK_FIELDS = ["vatOn","turnoverOn","incomeTaxOn","bankTaxOn"];
+  var FIELD_ID = {
+    aov:"aov", cogsPct:"cogsPct", shipping:"shipping", gatewayPct:"gatewayPct",
+    platformPct:"platformPct", platformFee:"platformFee", agencyFixed:"agencyFixed",
+    agencyVarPct:"agencyVarPct", vatPct:"vatPct", turnoverPct:"turnoverPct",
+    incomeTaxPct:"incomeTaxPct", bankTaxPct:"bankTaxPct",
+    vatOn:"vatOn", turnoverOn:"turnoverOn", incomeTaxOn:"incomeTaxOn", bankTaxOn:"bankTaxOn"
+  };
+
+  function fillAssumptionInputs(){
+    document.getElementById("bizName").value = state.biz;
+    NUM_FIELDS.forEach(function(key){
+      var el = document.getElementById(FIELD_ID[key]);
+      if (el) el.value = round2(usdToDisplay(state.a[key]));
+    });
+    PCT_FIELDS.forEach(function(key){
+      var el = document.getElementById(FIELD_ID[key]);
+      if (el) el.value = state.a[key];
+    });
+    CHECK_FIELDS.forEach(function(key){
+      var el = document.getElementById(FIELD_ID[key]);
+      if (el) el.checked = !!state.a[key];
+    });
+    renderCogsField();
+    renderFixedCostsField();
+  }
+
+  function round2(v){ return Math.round(v*100)/100; }
+
+  // COGS toggles between "% de facturación" and "US$/unidad" — the input itself is swapped
+  // out, so it's bound once via delegation on the host rather than a per-element listener.
+  function renderCogsField(){
+    document.querySelectorAll("#cogsModeSegmented button").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-cogsmode") === state.a.cogsMode);
+    });
+    var host = document.getElementById("cogsInputHost");
+    if (state.a.cogsMode === "perUnit"){
+      host.innerHTML = '<div class="num-wrap has-prefix"><span class="prefix">'+currencyPrefixLabel()+'</span>'+
+        '<input type="number" id="cogsPerUnit" min="0" step="0.5" value="'+round2(usdToDisplay(state.a.cogsPerUnit))+'"></div>';
+    } else {
+      host.innerHTML = '<div class="num-wrap has-suffix"><span class="suffix">%</span>'+
+        '<input type="number" id="cogsPct" min="0" max="100" step="0.5" value="'+state.a.cogsPct+'"></div>';
+    }
+  }
+
+  function bindAssumptionEvents(){
+    document.getElementById("bizName").addEventListener("input", function(e){
+      state.biz = e.target.value; saveState();
+    });
+    NUM_FIELDS.forEach(function(key){
+      var el = document.getElementById(FIELD_ID[key]);
+      el.addEventListener("input", function(e){
+        var v = displayToUsd(parseFloat(e.target.value));
+        state.a[key] = isNaN(v) ? 0 : v;
+        saveState(); renderAll();
+      });
+    });
+    PCT_FIELDS.forEach(function(key){
+      var el = document.getElementById(FIELD_ID[key]);
+      el.addEventListener("input", function(e){
+        state.a[key] = parseFloat(e.target.value);
+        if (isNaN(state.a[key])) state.a[key] = 0;
+        saveState(); renderAll();
+      });
+    });
+    CHECK_FIELDS.forEach(function(key){
+      var el = document.getElementById(FIELD_ID[key]);
+      el.addEventListener("change", function(e){
+        state.a[key] = e.target.checked; saveState(); renderAll();
+      });
+    });
+
+    document.getElementById("cogsModeSegmented").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-cogsmode]");
+      if (!btn) return;
+      var newMode = btn.getAttribute("data-cogsmode");
+      if (newMode === state.a.cogsMode) return;
+      state.a.cogsMode = newMode;
+      saveState(); renderCogsField(); renderAll();
+    });
+    document.getElementById("cogsInputHost").addEventListener("input", function(e){
+      if (e.target.id === "cogsPct"){
+        var v = parseFloat(e.target.value);
+        state.a.cogsPct = isNaN(v) ? 0 : v;
+      } else if (e.target.id === "cogsPerUnit"){
+        var v2 = displayToUsd(parseFloat(e.target.value));
+        state.a.cogsPerUnit = isNaN(v2) ? 0 : v2;
+      } else {
+        return;
+      }
+      saveState(); renderAll();
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", function(){
+      state = JSON.parse(JSON.stringify(DEFAULTS));
+      saveState(); fillAssumptionInputs(); renderCurrencyControls(); renderAll();
+    });
+  }
+
+  function bindScenarioEvents(){
+    document.getElementById("scenarioRevenue").addEventListener("input", function(e){
+      var v = displayToUsd(parseFloat(e.target.value));
+      state.scenario.revenue = isNaN(v) ? 0 : Math.max(0, v);
+      saveState(); renderAll();
+    });
+
+    document.getElementById("modeSegmented").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-mode]");
+      if (!btn) return;
+      var newMode = btn.getAttribute("data-mode");
+      if (newMode === state.scenario.mode) return;
+      var line = computeScenarioLine();
+      if (newMode === "adspend") state.scenario.driver = line.adSpend;
+      else if (newMode === "cac") state.scenario.driver = isFinite(line.cac) ? line.cac : 0;
+      else if (newMode === "roas") state.scenario.driver = isFinite(line.roas) ? line.roas : 0;
+      state.scenario.mode = newMode;
+      saveState(); renderAll();
+    });
+
+    document.getElementById("scenarioStats").addEventListener("input", function(e){
+      if (e.target.id !== "driverInput") return;
+      var raw = parseFloat(e.target.value);
+      // ROAS is a unitless multiplier — only "Inversión US$" and "CAC" driver values are money.
+      var v = state.scenario.mode === "roas" ? raw : displayToUsd(raw);
+      state.scenario.driver = isNaN(v) ? 0 : Math.max(0, v);
+      saveState(); renderAll(true);
+    });
+
+    document.getElementById("targetNetProfitInput").addEventListener("input", function(e){
+      var targetNetProfit = displayToUsd(parseFloat(e.target.value));
+      if (isNaN(targetNetProfit)) return;
+      var eff = currentEfficiencyForBreakeven();
+      var requiredRevenue = solveRevenueForNetProfit(eff.mode, eff.driver, targetNetProfit);
+      if (!requiredRevenue) return;
+      // Solved holding CAC constant. CAC and ROAS stay valid at any revenue (they're
+      // scale-invariant), but a fixed-$ pauta isn't — rescale it so the scenario actually
+      // lands on the target instead of drifting off it once revenue changes underneath it.
+      if (state.scenario.mode === "adspend"){
+        state.scenario.driver = computeAdSpend(requiredRevenue, eff.mode, eff.driver, state.a.aov);
+      }
+      state.scenario.revenue = requiredRevenue;
+      saveState(); renderAll();
+    });
+  }
+
+  function bindRampEvents(){
+    document.getElementById("rampTable").addEventListener("input", function(e){
+      var t = e.target;
+      var idx = t.getAttribute("data-idx");
+      var field = t.getAttribute("data-field");
+      if (idx === null || !field) return;
+      idx = parseInt(idx, 10);
+      if (field === "label"){
+        state.months[idx].label = t.value;
+      } else {
+        var v = displayToUsd(parseFloat(t.value));
+        state.months[idx][field] = isNaN(v) ? 0 : v;
+      }
+      saveState();
+      renderRampAll(true);
+    });
+
+    document.getElementById("addMonthBtn").addEventListener("click", function(){
+      var last = state.months[state.months.length-1];
+      var prev = state.months.length > 1 ? state.months[state.months.length-2] : last;
+      var revStep = last.revenue - prev.revenue;
+      var adStep = last.adSpend - prev.adSpend;
+      state.months.push({
+        label: "Mes " + (state.months.length+1),
+        revenue: Math.max(0, Math.round(last.revenue + (revStep || last.revenue*0.2))),
+        adSpend: Math.max(0, Math.round(last.adSpend + (adStep || last.adSpend*0.1)))
+      });
+      saveState(); renderRampAll();
+    });
+    document.getElementById("removeMonthBtn").addEventListener("click", function(){
+      if (state.months.length <= 1) return;
+      state.months.pop();
+      saveState(); renderRampAll();
+    });
+  }
+
+  function renderRampAll(skipRampInputs){
+    var data = computeRamp();
+    renderChart(data);
+    if (!skipRampInputs) renderRampTable(data);
+    else renderRampComputedOnly(data);
+    renderRampPLTable(data);
+  }
+
+  function renderRampComputedOnly(data){
+    var rows = document.querySelectorAll("#rampTable tbody tr");
+    rows.forEach(function(tr, i){
+      var r = data.rows[i];
+      var cells = tr.querySelectorAll("td");
+      cells[3].textContent = num0(r.units);
+      cells[4].textContent = money2(r.cac);
+      cells[5].textContent = xTimes(r.roas);
+    });
+  }
+
+  function renderAll(skipScenarioDriverInput){
+    renderKPIs();
+    if (skipScenarioDriverInput) renderScenarioComputedOnly(); else renderScenario();
+    renderBreakeven();
+    renderScenarioPL();
+    renderRampAll();
+    syncCurrencyPrefixes();
+  }
+
+  // ---------------- Currency toggle ----------------
+  function renderCurrencyControls(){
+    document.querySelectorAll("#currencySegmented button").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-currency") === state.display.currency);
+    });
+    document.getElementById("fxFieldWrap").style.display = state.display.currency === "ARS" ? "flex" : "none";
+    document.getElementById("fxRate").value = state.display.fx;
+  }
+
+  function bindCurrencyEvents(){
+    document.getElementById("currencySegmented").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-currency]");
+      if (!btn) return;
+      var newCurrency = btn.getAttribute("data-currency");
+      if (newCurrency === state.display.currency) return;
+      state.display.currency = newCurrency;
+      saveState();
+      renderCurrencyControls();
+      fillAssumptionInputs();
+      renderAll();
+    });
+    document.getElementById("fxRate").addEventListener("input", function(e){
+      var v = parseFloat(e.target.value);
+      if (isFinite(v) && v > 0) state.display.fx = v;
+      saveState();
+      fillAssumptionInputs();
+      renderAll();
+    });
+  }
+
+  fillAssumptionInputs();
+  bindAssumptionEvents();
+  bindFixedCostsEvents();
+  bindScenarioEvents();
+  bindRampEvents();
+  renderCurrencyControls();
+  bindCurrencyEvents();
+  renderAll();
+})();
+</script>
+</body>
+</html>

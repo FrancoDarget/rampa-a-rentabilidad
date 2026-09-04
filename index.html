@@ -432,6 +432,7 @@
     align-items: flex-end;
   }
   .scenario-revenue{ min-width: 220px; }
+  #scenarioUnreachable:not(:empty){ margin: 16px 0; }
   .scenario-revenue label, .segmented-label{
     display:block;
     font-size: 11px;
@@ -744,7 +745,7 @@
   <header class="top">
     <div>
       <h1>Rampa a Rentabilidad</h1>
-      <p class="sub">Definí un escenario de facturación y pauta publicitaria para un negocio de e-commerce — elegí si tu punto de partida es la facturación, la inversión en dólares, el CAC o el ROAS — y encontrá el piso de facturación necesario para cubrir costos antes de empezar a cobrarle una comisión variable al cliente. Metodología inspirada en un modelo real de ramp-up para retail online en Argentina — todos los supuestos son editables.</p>
+      <p class="sub">Partí de la utilidad neta mensual que el cliente quiere generar y de la pauta publicitaria (en dólares, CAC o ROAS) de un negocio de e-commerce — la facturación necesaria se calcula sola — y encontrá el piso de facturación para cubrir costos antes de empezar a cobrarle una comisión variable al cliente. Metodología inspirada en un modelo real de ramp-up para retail online en Argentina — todos los supuestos son editables.</p>
     </div>
     <div class="header-controls">
       <div class="biz-field">
@@ -915,16 +916,10 @@
       <div class="card">
         <div class="card-head">
           <h2>Escenario</h2>
-          <p class="card-sub">Elegí qué métrica querés usar como punto de partida: facturación, utilidad neta que el cliente quiere lograr, inversión en pauta, CAC o ROAS. Las demás se recalculan solas.</p>
+          <p class="card-sub">Empezá por la utilidad neta que el cliente quiere generar y la pauta (en dólares, CAC o ROAS). La facturación necesaria se calcula sola.</p>
         </div>
         <div class="card-body">
           <div class="scenario-top">
-            <div class="scenario-revenue">
-              <label for="scenarioRevenue">Facturación mensual objetivo</label>
-              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
-                <input type="number" id="scenarioRevenue" min="0" step="500">
-              </div>
-            </div>
             <div class="scenario-revenue">
               <label for="targetNetProfitInput">Utilidad neta mensual que el cliente quiere lograr</label>
               <div class="num-wrap has-prefix"><span class="prefix">US$</span>
@@ -940,7 +935,8 @@
               </div>
             </div>
           </div>
-          <span class="fnote">Facturación y utilidad neta están enlazadas: cambiar una recalcula la otra al toque, manteniendo el CAC/ROAS actual.</span>
+          <span class="fnote">Utilidad neta y pauta son las dos anclas del escenario. Cambiar el modo (US$/CAC/ROAS) recalcula la pauta y la facturación necesaria, manteniendo la utilidad neta fija.</span>
+          <div id="scenarioUnreachable"></div>
           <div class="stat-grid" id="scenarioStats"></div>
         </div>
       </div>
@@ -1007,7 +1003,7 @@
   </div>
 
   <footer class="note">
-    <strong>Cómo se calcula:</strong> unidades = facturación / ticket promedio · IVA se descuenta del precio final para obtener ingresos netos · COGS se aplica como % de la facturación o como precio por unidad × unidades vendidas, según el modo elegido, y las comisiones se aplican sobre la facturación bruta · el margen de contribución resta comisiones, envío y pauta de la utilidad bruta · el fee variable de agencia y el impuesto a las ganancias parten de esa base, con piso en cero. Todos los montos se guardan en dólares y se convierten a pesos con el tipo de cambio que definas si elegís ver la calculadora en ARS. El punto de equilibrio se calcula manteniendo fijo el CAC/ROAS actual del escenario — no el campo que hayas elegido para editar en "Definir pauta por" — y despejando la facturación en la que la utilidad operativa da cero. Por eso cambiar de Inversión US$/CAC/ROAS no mueve el piso: sólo lo mueve editar un valor. Los valores de partida replican un modelo de ejemplo para e-commerce de moda/accesorios en Argentina; reemplazalos por los datos reales de tu negocio. Tus datos se guardan solo en este navegador — no se envían a ningún servidor.
+    <strong>Cómo se calcula:</strong> la facturación del escenario se despeja a partir de la utilidad neta objetivo y la pauta (US$, CAC o ROAS) — no es un campo que se tipee directo · unidades = facturación / ticket promedio · IVA se descuenta del precio final para obtener ingresos netos · COGS se aplica como % de la facturación o como precio por unidad × unidades vendidas, según el modo elegido, y las comisiones se aplican sobre la facturación bruta · el margen de contribución resta comisiones, envío y pauta de la utilidad bruta · el fee variable de agencia y el impuesto a las ganancias parten de esa base, con piso en cero. Todos los montos se guardan en dólares y se convierten a pesos con el tipo de cambio que definas si elegís ver la calculadora en ARS. El punto de equilibrio se calcula manteniendo fijo el CAC/ROAS actual del escenario — no el campo que hayas elegido para editar en "Definir pauta por" — y despejando la facturación en la que la utilidad operativa da cero. Por eso cambiar de Inversión US$/CAC/ROAS no mueve el piso: sólo lo mueve editar un valor. Los valores de partida replican un modelo de ejemplo para e-commerce de moda/accesorios en Argentina; reemplazalos por los datos reales de tu negocio. Tus datos se guardan solo en este navegador — no se envían a ningún servidor.
   </footer>
 </div>
 
@@ -1034,7 +1030,7 @@
       bankTaxOn: true, bankTaxPct: 0.8
     },
     scenario: {
-      revenue: 50000,
+      targetNetProfit: 3837,
       mode: "adspend",
       driver: 7500
     },
@@ -1054,7 +1050,7 @@
     ]
   };
 
-  var STORAGE_KEY = "rampa-rentabilidad-state-v6";
+  var STORAGE_KEY = "rampa-rentabilidad-state-v7";
   var state = loadState();
 
   function loadState(){
@@ -1176,19 +1172,26 @@
     return 0;
   }
 
+  // Utilidad neta objetivo + la pauta (US$/CAC/ROAS, según el modo) son las dos anclas fijas del
+  // escenario. La facturación SIEMPRE se deriva de esas dos — nunca se guarda ni se edita directo.
   function computeScenarioLine(){
     var s = state.scenario;
-    var adSpend = computeAdSpend(s.revenue, s.mode, s.driver, state.a.aov);
-    return computeLine(state.a, s.revenue, adSpend);
+    var revenue = solveRevenueForNetProfit(s.mode, s.driver, s.targetNetProfit);
+    var reachable = !!revenue;
+    var r = reachable ? revenue : 0;
+    var adSpend = computeAdSpend(r, s.mode, s.driver, state.a.aov);
+    var line = computeLine(state.a, r, adSpend);
+    line.reachable = reachable;
+    return line;
   }
 
   // The breakeven card always assumes pauta scales with revenue at the scenario's CURRENT
   // CAC/ROAS efficiency — regardless of which field "Definir pauta por" has selected for editing.
   // That keeps the breakeven numbers stable when you just switch modes without changing any value;
-  // only actually editing revenue, pauta, CAC or ROAS should move the floor.
+  // only actually editing pauta, CAC, ROAS or the utilidad neta objetivo should move the floor.
   function currentEfficiencyForBreakeven(){
     var line = computeScenarioLine();
-    return { mode: "cac", driver: isFinite(line.cac) ? line.cac : 0 };
+    return { mode: "cac", driver: (line.reachable && isFinite(line.cac)) ? line.cac : 0 };
   }
 
   // Exact breakeven revenue for a fixed ad-spend "efficiency" (mode+driver): operatingProfitBeforeTax
@@ -1262,16 +1265,21 @@
   // ---------------- KPIs ----------------
   function renderKPIs(){
     var line = computeScenarioLine();
-    var margin = line.grossRevenue > 0 ? (line.netProfit/line.grossRevenue) : NaN;
+    var margin = (line.reachable && line.grossRevenue > 0) ? (line.netProfit/line.grossRevenue) : NaN;
     var eff = currentEfficiencyForBreakeven();
     var floor = solveBreakeven(eff.mode, eff.driver, true);
 
-    var cards = [
+    var cards = line.reachable ? [
       { label: "Facturación del escenario", value: money0(line.grossRevenue), cls:"" },
       { label: "Utilidad neta del escenario", value: money0(line.netProfit), cls: line.netProfit >= 0 ? "good" : "bad" },
       { label: "Margen neto del escenario", value: pct1(margin), cls: margin >= 0 ? "good" : "bad" },
       { label: "Piso antes de tu comisión", value: floor ? money0(floor) : "No se alcanza", cls: floor ? "" : "bad",
         hint: floor ? (line.grossRevenue >= floor ? "El escenario ya lo supera" : "El escenario está por debajo") : "Con el CAC/ROAS actual, ajustalo para encontrar un piso" }
+    ] : [
+      { label: "Facturación del escenario", value: "No alcanzable", cls:"bad" },
+      { label: "Utilidad neta del escenario", value: "No alcanzable", cls:"bad" },
+      { label: "Margen neto del escenario", value: "—", cls:"" },
+      { label: "Piso antes de tu comisión", value: "—", cls:"" }
     ];
 
     document.getElementById("kpiRow").innerHTML = cards.map(function(c){
@@ -1283,43 +1291,57 @@
   // ---------------- Scenario card ----------------
   function renderScenario(){
     var s = state.scenario;
-    document.getElementById("scenarioRevenue").value = round2(usdToDisplay(s.revenue));
+    renderTargetProfitInput();
 
     var buttons = document.querySelectorAll("#modeSegmented button");
     buttons.forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-mode") === s.mode); });
 
     var line = computeScenarioLine();
+    renderScenarioUnreachableBanner(line);
+
     var boxes = [
-      { key:"units", label:"Unidades", isDriver:false, display: num0(line.units) },
+      { key:"units", label:"Unidades", isDriver:false, isResult:false, display: num0(line.units) },
+      { key:"revenue", label:"Facturación resultante", isDriver:false, isResult:true, display: money0(line.grossRevenue) },
       { key:"adspend", label:"Inversión en pauta", isDriver: s.mode==="adspend", display: money0(line.adSpend), prefix:currencyPrefixLabel(), step:100, isMoney:true },
       { key:"cac", label:"CAC ("+currencyPrefixLabel()+"/unidad)", isDriver: s.mode==="cac", display: money2(line.cac), prefix:currencyPrefixLabel(), step:0.5, isMoney:true },
       { key:"roas", label:"ROAS", isDriver: s.mode==="roas", display: xTimes(line.roas), suffix:"×", step:0.1, isMoney:false }
     ];
 
     var html = boxes.map(function(b){
-      var inner;
+      var inner, tag = "";
       if (b.isDriver){
         var displayVal = round2(b.isMoney ? usdToDisplay(s.driver) : s.driver);
         inner = '<div class="num-wrap '+(b.prefix?'has-prefix':'has-suffix')+'">'+
           (b.prefix ? '<span class="prefix">'+b.prefix+'</span>' : '<span class="suffix">'+b.suffix+'</span>') +
           '<input type="number" id="driverInput" min="0" step="'+b.step+'" value="'+displayVal+'"></div>';
+        tag = '<span class="edit-tag">EDITABLE</span>';
       } else {
         inner = '<div class="stat-value" data-statkey="'+b.key+'">'+b.display+'</div>';
+        if (b.isResult) tag = '<span class="edit-tag result-tag">RESULTADO</span>';
       }
-      return '<div class="stat-box'+(b.isDriver?' driver':'')+'">'+
-        '<div class="stat-label"><span>'+b.label+'</span>'+(b.isDriver?'<span class="edit-tag">EDITABLE</span>':'')+'</div>'+
+      return '<div class="stat-box'+(b.isDriver?' driver':'')+(b.isResult?' result':'')+'">'+
+        '<div class="stat-label"><span>'+b.label+'</span>'+tag+'</div>'+
         inner + '</div>';
     }).join("");
 
     document.getElementById("scenarioStats").innerHTML = html;
-    renderTargetProfitInput();
+  }
+
+  function renderScenarioUnreachableBanner(line){
+    var warningHost = document.getElementById("scenarioUnreachable");
+    warningHost.innerHTML = line.reachable ? "" :
+      '<div class="breakeven-main unreachable">' +
+        '<div class="be-figure" style="font-size:16px;">Con este CAC/ROAS no se llega a esa utilidad neta a ningún nivel de facturación.</div>' +
+        '<div class="be-sub">Mejorá la eficiencia de pauta (subí el ROAS o bajá el CAC) o bajá el objetivo de utilidad neta.</div>' +
+      '</div>';
   }
 
   function renderScenarioComputedOnly(){
     var s = state.scenario;
     var line = computeScenarioLine();
     renderTargetProfitInput();
-    var map = { units: num0(line.units), adspend: money0(line.adSpend), cac: money2(line.cac), roas: xTimes(line.roas) };
+    renderScenarioUnreachableBanner(line);
+    var map = { units: num0(line.units), revenue: money0(line.grossRevenue), adspend: money0(line.adSpend), cac: money2(line.cac), roas: xTimes(line.roas) };
     Object.keys(map).forEach(function(k){
       if ((k==="adspend" && s.mode==="adspend") || (k==="cac" && s.mode==="cac") || (k==="roas" && s.mode==="roas")) return;
       var el = document.querySelector('.stat-value[data-statkey="'+k+'"]');
@@ -1390,11 +1412,10 @@
     }
   }
 
-  // "Utilidad neta objetivo" is not stored separately — it's always a live mirror of the
-  // scenario's actual net profit. Typing into it solves backwards for the required revenue
-  // (holding CAC/ROAS fixed) and writes that into state.scenario, same as any other driver.
+  // Utilidad neta objetivo is now one of the scenario's two stored anchors (the other being
+  // the pauta driver) — just mirror the stored value, no solving needed to display it.
   function renderTargetProfitInput(){
-    document.getElementById("targetNetProfitInput").value = round2(usdToDisplay(computeScenarioLine().netProfit));
+    document.getElementById("targetNetProfitInput").value = round2(usdToDisplay(state.scenario.targetNetProfit));
   }
 
   // ---------------- Scenario P&L: piso vs. escenario actual ----------------
@@ -1443,7 +1464,7 @@
       var curCls = "col-current" + ((!spec.info && curVal < 0) ? " neg" : "");
       return '<tr class="'+rowClass+'"><td>'+spec.label+'</td>' +
         '<td class="'+floorCls+'">'+ (floorLine ? spec.fmt(floorVal) : "—") +'</td>' +
-        '<td class="'+curCls+'">'+ spec.fmt(curVal) +'</td></tr>';
+        '<td class="'+curCls+'">'+ (current.reachable ? spec.fmt(curVal) : "—") +'</td></tr>';
     }).join("");
 
     document.getElementById("plScenarioTable").innerHTML = head + '<tbody>'+body+'</tbody>';
@@ -1692,21 +1713,19 @@
   }
 
   function bindScenarioEvents(){
-    document.getElementById("scenarioRevenue").addEventListener("input", function(e){
-      var v = displayToUsd(parseFloat(e.target.value));
-      state.scenario.revenue = isNaN(v) ? 0 : Math.max(0, v);
-      saveState(); renderAll();
-    });
-
     document.getElementById("modeSegmented").addEventListener("click", function(e){
       var btn = e.target.closest("button[data-mode]");
       if (!btn) return;
       var newMode = btn.getAttribute("data-mode");
       if (newMode === state.scenario.mode) return;
+      // Carry the equivalent pauta value over so switching modes doesn't jump the scenario —
+      // the required facturación is re-derived from utilidad neta + the new mode/driver anyway.
       var line = computeScenarioLine();
-      if (newMode === "adspend") state.scenario.driver = line.adSpend;
-      else if (newMode === "cac") state.scenario.driver = isFinite(line.cac) ? line.cac : 0;
-      else if (newMode === "roas") state.scenario.driver = isFinite(line.roas) ? line.roas : 0;
+      if (line.reachable){
+        if (newMode === "adspend") state.scenario.driver = line.adSpend;
+        else if (newMode === "cac") state.scenario.driver = isFinite(line.cac) ? line.cac : 0;
+        else if (newMode === "roas") state.scenario.driver = isFinite(line.roas) ? line.roas : 0;
+      }
       state.scenario.mode = newMode;
       saveState(); renderAll();
     });
@@ -1721,18 +1740,8 @@
     });
 
     document.getElementById("targetNetProfitInput").addEventListener("input", function(e){
-      var targetNetProfit = displayToUsd(parseFloat(e.target.value));
-      if (isNaN(targetNetProfit)) return;
-      var eff = currentEfficiencyForBreakeven();
-      var requiredRevenue = solveRevenueForNetProfit(eff.mode, eff.driver, targetNetProfit);
-      if (!requiredRevenue) return;
-      // Solved holding CAC constant. CAC and ROAS stay valid at any revenue (they're
-      // scale-invariant), but a fixed-$ pauta isn't — rescale it so the scenario actually
-      // lands on the target instead of drifting off it once revenue changes underneath it.
-      if (state.scenario.mode === "adspend"){
-        state.scenario.driver = computeAdSpend(requiredRevenue, eff.mode, eff.driver, state.a.aov);
-      }
-      state.scenario.revenue = requiredRevenue;
+      var v = displayToUsd(parseFloat(e.target.value));
+      state.scenario.targetNetProfit = isNaN(v) ? 0 : v;
       saveState(); renderAll();
     });
   }

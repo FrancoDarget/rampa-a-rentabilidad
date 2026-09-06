@@ -373,6 +373,74 @@
     line-height: 1;
   }
   .fixed-cost-row .remove-btn:hover{ background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
+
+  /* ---------- Assumptions tabbar ---------- */
+  .tabbar{
+    display:flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .tabbar .tab-btn{
+    flex: 1;
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 12px 10px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tabbar .tab-btn.active{ color: var(--accent); border-bottom-color: var(--accent); }
+  .tabbar .tab-btn:hover{ color: var(--ink); }
+
+  .product-row{
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: var(--surface-2);
+  }
+  .product-row-top{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .product-row-top input.plain{ flex:1; min-width: 0; background: var(--surface); }
+  .product-row-nums{
+    display:grid;
+    grid-template-columns: 1fr 1fr 0.8fr;
+    gap: 6px;
+  }
+  .product-row-nums .num-wrap{ min-width: 0; }
+  .product-row-nums .num-wrap input{ background: var(--surface); }
+  .product-row-nums-head{
+    display:grid;
+    grid-template-columns: 1fr 1fr 0.8fr;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .product-row-nums-head .flabel{
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    text-align: center;
+  }
+  .product-row .remove-btn{
+    flex: none;
+    width: 24px; height: 24px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .product-row .remove-btn:hover{ background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
   .num-wrap{
     position: relative;
     display:flex;
@@ -779,135 +847,152 @@
           <button class="btn small ghost" id="resetBtn" title="Volver a los valores del modelo de ejemplo">Restablecer</button>
         </div>
 
-        <details class="group" open>
-          <summary>Economía unitaria</summary>
-          <div class="group-body">
-            <div class="field">
-              <label class="flabel" for="aov">Ticket promedio (AOV)</label>
-              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
-                <input type="number" id="aov" min="0" step="1">
+        <div class="tabbar" id="assumptionsTabbar">
+          <button type="button" class="tab-btn active" data-tab="general">Costos generales</button>
+          <button type="button" class="tab-btn" data-tab="products">Productos</button>
+        </div>
+
+        <div id="tabPanelGeneral">
+          <details class="group" open>
+            <summary>Comisiones, envío y plataforma</summary>
+            <div class="group-body">
+              <div class="field">
+                <label class="flabel" for="gatewayPct">Pasarela de pago + cuotas (% s/ venta)</label>
+                <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                  <input type="number" id="gatewayPct" min="0" max="100" step="0.1">
+                </div>
+              </div>
+              <div class="field">
+                <label class="flabel" for="platformPct">Comisión ecommerce por pasarela externa (%)</label>
+                <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                  <input type="number" id="platformPct" min="0" max="100" step="0.1">
+                </div>
+              </div>
+              <div class="field">
+                <label class="flabel" for="platformFee">Fee mensual de la plataforma ecommerce</label>
+                <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                  <input type="number" id="platformFee" min="0" step="1">
+                </div>
+              </div>
+              <div class="field">
+                <label class="flabel" for="shipping">Costo de envío gratis (por pedido)</label>
+                <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                  <input type="number" id="shipping" min="0" step="0.5">
+                </div>
               </div>
             </div>
-            <div class="field">
+          </details>
+
+          <details class="group" open>
+            <summary>Costos fijos del cliente</summary>
+            <div class="group-body">
+              <span class="fnote">Sueldos, oficina y demás costos fijos que el cliente tiene que cubrir con las ventas — nosotros también los cubrimos antes de cobrar la comisión variable.</span>
+              <div id="fixedCostsList"></div>
+              <div class="ramp-actions" style="margin-top:0;">
+                <button class="btn small" id="addFixedCostBtn" type="button">+ Agregar costo fijo</button>
+              </div>
+              <div class="field-row" style="justify-content:space-between; padding-top:4px; border-top:1px dashed var(--border);">
+                <span class="flabel" style="font-weight:600;">Total mensual</span>
+                <span class="flabel" id="fixedCostsTotal" style="font-family:var(--font-mono); font-weight:600;"></span>
+              </div>
+            </div>
+          </details>
+
+          <details class="group" open>
+            <summary>Agencia / consultoría</summary>
+            <div class="group-body">
+              <div class="field">
+                <label class="flabel" for="agencyFixed">Fee fijo mensual (base pactada)</label>
+                <div class="num-wrap has-prefix"><span class="prefix">US$</span>
+                  <input type="number" id="agencyFixed" min="0" step="10">
+                </div>
+              </div>
+              <div class="field">
+                <label class="flabel" for="agencyVarPct">Fee variable — tu comisión (% s/ margen de contribución)</label>
+                <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                  <input type="number" id="agencyVarPct" min="0" max="100" step="1">
+                </div>
+                <span class="fnote">Esta es la comisión que "El piso de equilibrio" te ayuda a posponer hasta que el cliente cubra sus costos.</span>
+              </div>
+            </div>
+          </details>
+
+          <details class="group">
+            <summary>Impuestos</summary>
+            <div class="group-body">
+              <div class="field">
+                <div class="field-row">
+                  <input type="checkbox" id="vatOn">
+                  <label class="flabel" for="vatPct" style="flex:1">IVA / VAT (pass-through, % s/ precio final)</label>
+                </div>
+                <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                  <input type="number" id="vatPct" min="0" max="100" step="0.5">
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <input type="checkbox" id="turnoverOn">
+                  <label class="flabel" for="turnoverPct" style="flex:1">Ingresos brutos / turnover tax (% s/ ingresos netos de IVA)</label>
+                </div>
+                <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                  <input type="number" id="turnoverPct" min="0" max="100" step="0.1">
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <input type="checkbox" id="incomeTaxOn">
+                  <label class="flabel" for="incomeTaxPct" style="flex:1">Impuesto a las ganancias (% s/ utilidad operativa)</label>
+                </div>
+                <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                  <input type="number" id="incomeTaxPct" min="0" max="100" step="1">
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <input type="checkbox" id="bankTaxOn">
+                  <label class="flabel" for="bankTaxPct" style="flex:1">Imp. a créditos/débitos bancarios, neto (% s/ facturación)</label>
+                </div>
+                <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                  <input type="number" id="bankTaxPct" min="0" max="100" step="0.1">
+                </div>
+              </div>
+              <span class="fnote">Destildá los que no apliquen a tu país o régimen fiscal — el cálculo los ignora.</span>
+            </div>
+          </details>
+        </div>
+
+        <div id="tabPanelProducts" hidden>
+          <details class="group" open>
+            <summary>Mezcla de productos</summary>
+            <div class="group-body">
               <div class="field-row" style="justify-content:space-between;">
-                <label class="flabel">COGS (costo de mercadería)</label>
-                <div class="segmented small" id="cogsModeSegmented">
+                <span class="fnote">Ingresar COGS de cada producto como</span>
+                <div class="segmented small" id="productCogsModeSegmented">
                   <button type="button" data-cogsmode="pct">%</button>
                   <button type="button" data-cogsmode="perUnit">US$/unidad</button>
                 </div>
               </div>
-              <div id="cogsInputHost"></div>
-              <span class="fnote">En US$/unidad, el costo total se calcula sobre las unidades vendidas (facturación / ticket promedio).</span>
+              <div class="product-row-nums-head">
+                <span class="flabel">Precio</span>
+                <span class="flabel">COGS</span>
+                <span class="flabel">% unid.</span>
+              </div>
+              <div id="productsList"></div>
+              <div class="ramp-actions" style="margin-top:0;">
+                <button class="btn small" id="addProductBtn" type="button">+ Agregar producto</button>
+              </div>
+              <div class="field-row" style="justify-content:space-between; padding-top:4px; border-top:1px dashed var(--border);">
+                <span class="flabel" style="font-weight:600;">Ticket promedio ponderado</span>
+                <span class="flabel" id="blendedAovDisplay" style="font-family:var(--font-mono); font-weight:600;"></span>
+              </div>
+              <div class="field-row" style="justify-content:space-between;">
+                <span class="flabel" style="font-weight:600;">COGS ponderado</span>
+                <span class="flabel" id="blendedCogsDisplay" style="font-family:var(--font-mono); font-weight:600;"></span>
+              </div>
+              <span class="fnote">El % de unidades define la mezcla de ventas entre productos (no hace falta que sume 100 — se normaliza solo). El ticket promedio y el COGS de arriba se calculan ponderando por esa mezcla, y son los que usa el resto de la calculadora.</span>
             </div>
-            <div class="field">
-              <label class="flabel" for="shipping">Costo de envío gratis (por pedido)</label>
-              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
-                <input type="number" id="shipping" min="0" step="0.5">
-              </div>
-            </div>
-          </div>
-        </details>
-
-        <details class="group" open>
-          <summary>Comisiones y plataforma</summary>
-          <div class="group-body">
-            <div class="field">
-              <label class="flabel" for="gatewayPct">Pasarela de pago + cuotas (% s/ venta)</label>
-              <div class="num-wrap has-suffix"><span class="suffix">%</span>
-                <input type="number" id="gatewayPct" min="0" max="100" step="0.1">
-              </div>
-            </div>
-            <div class="field">
-              <label class="flabel" for="platformPct">Comisión ecommerce por pasarela externa (%)</label>
-              <div class="num-wrap has-suffix"><span class="suffix">%</span>
-                <input type="number" id="platformPct" min="0" max="100" step="0.1">
-              </div>
-            </div>
-            <div class="field">
-              <label class="flabel" for="platformFee">Fee mensual de la plataforma ecommerce</label>
-              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
-                <input type="number" id="platformFee" min="0" step="1">
-              </div>
-            </div>
-          </div>
-        </details>
-
-        <details class="group" open>
-          <summary>Costos fijos del cliente</summary>
-          <div class="group-body">
-            <span class="fnote">Sueldos, oficina y demás costos fijos que el cliente tiene que cubrir con las ventas — nosotros también los cubrimos antes de cobrar la comisión variable.</span>
-            <div id="fixedCostsList"></div>
-            <div class="ramp-actions" style="margin-top:0;">
-              <button class="btn small" id="addFixedCostBtn" type="button">+ Agregar costo fijo</button>
-            </div>
-            <div class="field-row" style="justify-content:space-between; padding-top:4px; border-top:1px dashed var(--border);">
-              <span class="flabel" style="font-weight:600;">Total mensual</span>
-              <span class="flabel" id="fixedCostsTotal" style="font-family:var(--font-mono); font-weight:600;"></span>
-            </div>
-          </div>
-        </details>
-
-        <details class="group" open>
-          <summary>Agencia / consultoría</summary>
-          <div class="group-body">
-            <div class="field">
-              <label class="flabel" for="agencyFixed">Fee fijo mensual (base pactada)</label>
-              <div class="num-wrap has-prefix"><span class="prefix">US$</span>
-                <input type="number" id="agencyFixed" min="0" step="10">
-              </div>
-            </div>
-            <div class="field">
-              <label class="flabel" for="agencyVarPct">Fee variable — tu comisión (% s/ margen de contribución)</label>
-              <div class="num-wrap has-suffix"><span class="suffix">%</span>
-                <input type="number" id="agencyVarPct" min="0" max="100" step="1">
-              </div>
-              <span class="fnote">Esta es la comisión que "El piso de equilibrio" te ayuda a posponer hasta que el cliente cubra sus costos.</span>
-            </div>
-          </div>
-        </details>
-
-        <details class="group">
-          <summary>Impuestos</summary>
-          <div class="group-body">
-            <div class="field">
-              <div class="field-row">
-                <input type="checkbox" id="vatOn">
-                <label class="flabel" for="vatPct" style="flex:1">IVA / VAT (pass-through, % s/ precio final)</label>
-              </div>
-              <div class="num-wrap has-suffix"><span class="suffix">%</span>
-                <input type="number" id="vatPct" min="0" max="100" step="0.5">
-              </div>
-            </div>
-            <div class="field">
-              <div class="field-row">
-                <input type="checkbox" id="turnoverOn">
-                <label class="flabel" for="turnoverPct" style="flex:1">Ingresos brutos / turnover tax (% s/ ingresos netos de IVA)</label>
-              </div>
-              <div class="num-wrap has-suffix"><span class="suffix">%</span>
-                <input type="number" id="turnoverPct" min="0" max="100" step="0.1">
-              </div>
-            </div>
-            <div class="field">
-              <div class="field-row">
-                <input type="checkbox" id="incomeTaxOn">
-                <label class="flabel" for="incomeTaxPct" style="flex:1">Impuesto a las ganancias (% s/ utilidad operativa)</label>
-              </div>
-              <div class="num-wrap has-suffix"><span class="suffix">%</span>
-                <input type="number" id="incomeTaxPct" min="0" max="100" step="1">
-              </div>
-            </div>
-            <div class="field">
-              <div class="field-row">
-                <input type="checkbox" id="bankTaxOn">
-                <label class="flabel" for="bankTaxPct" style="flex:1">Imp. a créditos/débitos bancarios, neto (% s/ facturación)</label>
-              </div>
-              <div class="num-wrap has-suffix"><span class="suffix">%</span>
-                <input type="number" id="bankTaxPct" min="0" max="100" step="0.1">
-              </div>
-            </div>
-            <span class="fnote">Destildá los que no apliquen a tu país o régimen fiscal — el cálculo los ignora.</span>
-          </div>
-        </details>
+          </details>
+        </div>
       </div>
     </aside>
 
@@ -1003,7 +1088,7 @@
   </div>
 
   <footer class="note">
-    <strong>Cómo se calcula:</strong> la facturación del escenario se despeja a partir de la utilidad neta objetivo y la pauta (US$, CAC o ROAS) — no es un campo que se tipee directo · unidades = facturación / ticket promedio · IVA se descuenta del precio final para obtener ingresos netos · COGS se aplica como % de la facturación o como precio por unidad × unidades vendidas, según el modo elegido, y las comisiones se aplican sobre la facturación bruta · el margen de contribución resta comisiones, envío y pauta de la utilidad bruta · el fee variable de agencia y el impuesto a las ganancias parten de esa base, con piso en cero. Todos los montos se guardan en dólares y se convierten a pesos con el tipo de cambio que definas si elegís ver la calculadora en ARS. El punto de equilibrio se calcula manteniendo fijo el CAC/ROAS actual del escenario — no el campo que hayas elegido para editar en "Definir pauta por" — y despejando la facturación en la que la utilidad operativa da cero. Por eso cambiar de Inversión US$/CAC/ROAS no mueve el piso: sólo lo mueve editar un valor. Los valores de partida replican un modelo de ejemplo para e-commerce de moda/accesorios en Argentina; reemplazalos por los datos reales de tu negocio. Tus datos se guardan solo en este navegador — no se envían a ningún servidor.
+    <strong>Cómo se calcula:</strong> el ticket promedio y el COGS que usa todo el modelo salen de la pestaña "Productos" — un promedio ponderado por el % de unidades de cada producto en la mezcla, no un valor fijo de un solo producto · la facturación del escenario se despeja a partir de la utilidad neta objetivo y la pauta (US$, CAC o ROAS) — no es un campo que se tipee directo · unidades = facturación / ticket promedio ponderado · IVA se descuenta del precio final para obtener ingresos netos · el COGS de cada producto se ingresa como % de su propio precio o como costo por unidad, y las comisiones se aplican sobre la facturación bruta · el margen de contribución resta comisiones, envío y pauta de la utilidad bruta · el fee variable de agencia y el impuesto a las ganancias parten de esa base, con piso en cero. Todos los montos se guardan en dólares y se convierten a pesos con el tipo de cambio que definas si elegís ver la calculadora en ARS. El punto de equilibrio se calcula manteniendo fijo el CAC/ROAS actual del escenario — no el campo que hayas elegido para editar en "Definir pauta por" — y despejando la facturación en la que la utilidad operativa da cero. Por eso cambiar de Inversión US$/CAC/ROAS no mueve el piso: sólo lo mueve editar un valor. Los valores de partida replican un modelo de ejemplo para e-commerce de moda/accesorios en Argentina; reemplazalos por los datos reales de tu negocio. Tus datos se guardan solo en este navegador — no se envían a ningún servidor.
   </footer>
 </div>
 
@@ -1014,10 +1099,6 @@
   var DEFAULTS = {
     biz: "Mi negocio de e-commerce",
     a: {
-      aov: 105,
-      cogsMode: "pct",
-      cogsPct: 30,
-      cogsPerUnit: 31.5,
       shipping: 6,
       gatewayPct: 8,
       platformPct: 1,
@@ -1047,10 +1128,14 @@
     fixedCosts: [
       { label: "Sueldos / equipo", amount: 0 },
       { label: "Alquiler / oficina", amount: 0 }
+    ],
+    productCogsMode: "pct",
+    products: [
+      { label: "Producto 1", price: 105, cogsPct: 30, cogsPerUnit: 31.5, mixPct: 100 }
     ]
   };
 
-  var STORAGE_KEY = "rampa-rentabilidad-state-v7";
+  var STORAGE_KEY = "rampa-rentabilidad-state-v8";
   var state = loadState();
 
   function loadState(){
@@ -1058,7 +1143,7 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return JSON.parse(JSON.stringify(DEFAULTS));
       var parsed = JSON.parse(raw);
-      if (!parsed || !parsed.a || !parsed.scenario || !parsed.display || !Array.isArray(parsed.months) || !parsed.months.length || !Array.isArray(parsed.fixedCosts)) {
+      if (!parsed || !parsed.a || !parsed.scenario || !parsed.display || !Array.isArray(parsed.months) || !parsed.months.length || !Array.isArray(parsed.fixedCosts) || !Array.isArray(parsed.products) || !parsed.products.length) {
         return JSON.parse(JSON.stringify(DEFAULTS));
       }
       return parsed;
@@ -1115,6 +1200,34 @@
   // of revenue. Read via closure rather than threaded through computeLine's signature.
   function sumFixedCosts(){
     return (state.fixedCosts||[]).reduce(function(sum, item){ return sum + (Number(item.amount)||0); }, 0);
+  }
+
+  // Ticket promedio and COGS blended across the product mix, weighted by each product's share
+  // of UNITS sold (not revenue) — that's what makes a weighted-average AOV mathematically
+  // consistent with revenue/units for the mix as a whole.
+  function computeBlendedUnitEconomics(){
+    var products = (state.products && state.products.length) ? state.products : [{ price:0, cogsPct:0, cogsPerUnit:0, mixPct:1 }];
+    var totalMix = products.reduce(function(sum, p){ return sum + Math.max(0, Number(p.mixPct)||0); }, 0);
+    if (totalMix <= 0) totalMix = 1;
+    var aov = 0, cogsPerUnit = 0;
+    products.forEach(function(p){
+      var weight = Math.max(0, Number(p.mixPct)||0) / totalMix;
+      var price = Number(p.price)||0;
+      var cogsDollar = state.productCogsMode === "perUnit" ? (Number(p.cogsPerUnit)||0) : price*(Number(p.cogsPct)||0)/100;
+      aov += weight*price;
+      cogsPerUnit += weight*cogsDollar;
+    });
+    return { aov: aov, cogsPerUnit: cogsPerUnit };
+  }
+
+  // Feeds the blended product mix into the single-SKU assumptions the rest of the engine
+  // (computeLine, solveBreakeven, solveRevenueForNetProfit) already knows how to consume —
+  // none of that math changes; it just always sees a "blended product" from here on.
+  function syncProductsIntoAssumptions(){
+    var blended = computeBlendedUnitEconomics();
+    state.a.aov = blended.aov;
+    state.a.cogsMode = "perUnit";
+    state.a.cogsPerUnit = blended.cogsPerUnit;
   }
 
   // ---------------- Core P&L formula (shared by scenario, breakeven solver, and ramp months) ----------------
@@ -1612,10 +1725,10 @@
 
   // ---------------- Wiring assumptions ----------------
   var PCT_FIELDS = ["gatewayPct","platformPct","agencyVarPct","vatPct","turnoverPct","incomeTaxPct","bankTaxPct"];
-  var NUM_FIELDS = ["aov","shipping","platformFee","agencyFixed"];
+  var NUM_FIELDS = ["shipping","platformFee","agencyFixed"];
   var CHECK_FIELDS = ["vatOn","turnoverOn","incomeTaxOn","bankTaxOn"];
   var FIELD_ID = {
-    aov:"aov", cogsPct:"cogsPct", shipping:"shipping", gatewayPct:"gatewayPct",
+    shipping:"shipping", gatewayPct:"gatewayPct",
     platformPct:"platformPct", platformFee:"platformFee", agencyFixed:"agencyFixed",
     agencyVarPct:"agencyVarPct", vatPct:"vatPct", turnoverPct:"turnoverPct",
     incomeTaxPct:"incomeTaxPct", bankTaxPct:"bankTaxPct",
@@ -1636,27 +1749,11 @@
       var el = document.getElementById(FIELD_ID[key]);
       if (el) el.checked = !!state.a[key];
     });
-    renderCogsField();
     renderFixedCostsField();
+    renderProductsTab();
   }
 
   function round2(v){ return Math.round(v*100)/100; }
-
-  // COGS toggles between "% de facturación" and "US$/unidad" — the input itself is swapped
-  // out, so it's bound once via delegation on the host rather than a per-element listener.
-  function renderCogsField(){
-    document.querySelectorAll("#cogsModeSegmented button").forEach(function(b){
-      b.classList.toggle("active", b.getAttribute("data-cogsmode") === state.a.cogsMode);
-    });
-    var host = document.getElementById("cogsInputHost");
-    if (state.a.cogsMode === "perUnit"){
-      host.innerHTML = '<div class="num-wrap has-prefix"><span class="prefix">'+currencyPrefixLabel()+'</span>'+
-        '<input type="number" id="cogsPerUnit" min="0" step="0.5" value="'+round2(usdToDisplay(state.a.cogsPerUnit))+'"></div>';
-    } else {
-      host.innerHTML = '<div class="num-wrap has-suffix"><span class="suffix">%</span>'+
-        '<input type="number" id="cogsPct" min="0" max="100" step="0.5" value="'+state.a.cogsPct+'"></div>';
-    }
-  }
 
   function bindAssumptionEvents(){
     document.getElementById("bizName").addEventListener("input", function(e){
@@ -1685,30 +1782,106 @@
       });
     });
 
-    document.getElementById("cogsModeSegmented").addEventListener("click", function(e){
-      var btn = e.target.closest("button[data-cogsmode]");
-      if (!btn) return;
-      var newMode = btn.getAttribute("data-cogsmode");
-      if (newMode === state.a.cogsMode) return;
-      state.a.cogsMode = newMode;
-      saveState(); renderCogsField(); renderAll();
-    });
-    document.getElementById("cogsInputHost").addEventListener("input", function(e){
-      if (e.target.id === "cogsPct"){
-        var v = parseFloat(e.target.value);
-        state.a.cogsPct = isNaN(v) ? 0 : v;
-      } else if (e.target.id === "cogsPerUnit"){
-        var v2 = displayToUsd(parseFloat(e.target.value));
-        state.a.cogsPerUnit = isNaN(v2) ? 0 : v2;
-      } else {
-        return;
-      }
-      saveState(); renderAll();
-    });
-
     document.getElementById("resetBtn").addEventListener("click", function(){
       state = JSON.parse(JSON.stringify(DEFAULTS));
       saveState(); fillAssumptionInputs(); renderCurrencyControls(); renderAll();
+    });
+  }
+
+  // ---------------- Assumptions tabbar: Costos generales / Productos ----------------
+  function bindAssumptionsTabbar(){
+    document.getElementById("assumptionsTabbar").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-tab]");
+      if (!btn) return;
+      var tab = btn.getAttribute("data-tab");
+      document.querySelectorAll("#assumptionsTabbar button").forEach(function(b){
+        b.classList.toggle("active", b.getAttribute("data-tab") === tab);
+      });
+      document.getElementById("tabPanelGeneral").hidden = tab !== "general";
+      document.getElementById("tabPanelProducts").hidden = tab !== "products";
+    });
+  }
+
+  // ---------------- Productos (unit economics per product, blended into state.a) ----------------
+  function renderProductsTab(){
+    document.querySelectorAll("#productCogsModeSegmented button").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-cogsmode") === state.productCogsMode);
+    });
+
+    var perUnit = state.productCogsMode === "perUnit";
+    var host = document.getElementById("productsList");
+    host.innerHTML = state.products.map(function(p, i){
+      var cogsField = perUnit
+        ? '<div class="num-wrap has-prefix"><span class="prefix">'+currencyPrefixLabel()+'</span>'+
+          '<input type="number" min="0" step="0.5" data-field="cogsPerUnit" data-idx="'+i+'" value="'+round2(usdToDisplay(p.cogsPerUnit))+'"></div>'
+        : '<div class="num-wrap has-suffix"><span class="suffix">%</span>'+
+          '<input type="number" min="0" max="100" step="0.5" data-field="cogsPct" data-idx="'+i+'" value="'+p.cogsPct+'"></div>';
+      return '<div class="product-row">'+
+        '<div class="product-row-top">'+
+          '<input type="text" class="plain" data-field="label" data-idx="'+i+'" value="'+escapeAttr(p.label)+'" placeholder="Producto">'+
+          '<button type="button" class="remove-btn" data-remove-idx="'+i+'" title="Quitar">×</button>'+
+        '</div>'+
+        '<div class="product-row-nums">'+
+          '<div class="num-wrap has-prefix"><span class="prefix">'+currencyPrefixLabel()+'</span>'+
+            '<input type="number" min="0" step="1" data-field="price" data-idx="'+i+'" value="'+round2(usdToDisplay(p.price))+'"></div>'+
+          cogsField+
+          '<div class="num-wrap has-suffix"><span class="suffix">%</span>'+
+            '<input type="number" min="0" step="1" data-field="mixPct" data-idx="'+i+'" value="'+p.mixPct+'"></div>'+
+        '</div>'+
+      '</div>';
+    }).join("");
+
+    var blended = computeBlendedUnitEconomics();
+    document.getElementById("blendedAovDisplay").textContent = money0(blended.aov);
+    document.getElementById("blendedCogsDisplay").textContent = money2(blended.cogsPerUnit) + " /unidad";
+  }
+
+  function bindProductsEvents(){
+    document.getElementById("productCogsModeSegmented").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-cogsmode]");
+      if (!btn) return;
+      var newMode = btn.getAttribute("data-cogsmode");
+      if (newMode === state.productCogsMode) return;
+      state.productCogsMode = newMode;
+      saveState(); renderProductsTab(); renderAll();
+    });
+
+    document.getElementById("productsList").addEventListener("input", function(e){
+      var idx = e.target.getAttribute("data-idx");
+      var field = e.target.getAttribute("data-field");
+      if (idx === null || !field) return;
+      idx = parseInt(idx, 10);
+      var p = state.products[idx];
+      if (field === "label"){
+        p.label = e.target.value;
+      } else if (field === "price" || field === "cogsPerUnit"){
+        var v = displayToUsd(parseFloat(e.target.value));
+        p[field] = isNaN(v) ? 0 : v;
+      } else if (field === "cogsPct" || field === "mixPct"){
+        var v2 = parseFloat(e.target.value);
+        p[field] = isNaN(v2) ? 0 : v2;
+      } else {
+        return;
+      }
+      saveState();
+      var blended = computeBlendedUnitEconomics();
+      document.getElementById("blendedAovDisplay").textContent = money0(blended.aov);
+      document.getElementById("blendedCogsDisplay").textContent = money2(blended.cogsPerUnit) + " /unidad";
+      renderAll();
+    });
+
+    document.getElementById("productsList").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-remove-idx]");
+      if (!btn) return;
+      if (state.products.length <= 1) return;
+      var idx = parseInt(btn.getAttribute("data-remove-idx"), 10);
+      state.products.splice(idx, 1);
+      saveState(); renderProductsTab(); renderAll();
+    });
+
+    document.getElementById("addProductBtn").addEventListener("click", function(){
+      state.products.push({ label: "Producto " + (state.products.length+1), price: 0, cogsPct: 30, cogsPerUnit: 0, mixPct: 0 });
+      saveState(); renderProductsTab(); renderAll();
     });
   }
 
@@ -1802,6 +1975,7 @@
   }
 
   function renderAll(skipScenarioDriverInput){
+    syncProductsIntoAssumptions();
     renderKPIs();
     if (skipScenarioDriverInput) renderScenarioComputedOnly(); else renderScenario();
     renderBreakeven();
@@ -1842,7 +2016,9 @@
 
   fillAssumptionInputs();
   bindAssumptionEvents();
+  bindAssumptionsTabbar();
   bindFixedCostsEvents();
+  bindProductsEvents();
   bindScenarioEvents();
   bindRampEvents();
   renderCurrencyControls();

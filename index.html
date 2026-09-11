@@ -138,7 +138,12 @@
     display:flex;
     flex-wrap: wrap;
     gap: 18px;
-    align-items: flex-start;
+    align-items: flex-end;
+  }
+  #printTimestamp{
+    margin-top: 12px;
+    font-size: 11px;
+    color: #555;
   }
   .currency-field{
     display:flex;
@@ -805,6 +810,46 @@
     .kpis{ grid-template-columns: 1fr 1fr; }
     .stat-grid{ grid-template-columns: 1fr 1fr; }
   }
+
+  /* ---------- Export to PDF (print) ---------- */
+  .print-only{ display:none; }
+  @media print{
+    .print-only{ display:block; }
+    body{ background:#fff; color:#000; font-size: 11px; }
+    .app{ max-width:none; padding:10px; }
+    .layout{ grid-template-columns: 1fr; }
+    aside.sidebar{ position:static; }
+    .card, .kpi, .stat-box, .breakeven-main, .breakeven-secondary, .fixed-cost-row, .product-row{
+      box-shadow:none !important;
+      border: 1px solid #ccc !important;
+      break-inside: avoid;
+    }
+    table{ break-inside: auto; }
+    tr{ break-inside: avoid; }
+
+    /* Pure UI chrome: actions, add/remove, tabs, spinners — nothing that carries information. */
+    .btn, .ramp-actions, #assumptionsTabbar, .remove-btn, .toggle-hint{ display:none !important; }
+    #tabPanelGeneral, #tabPanelProducts{ display:block !important; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+    input[type="number"]{ -moz-appearance: textfield; }
+
+    /* Segmented toggles print as the chosen label, not a clickable control. */
+    .segmented{ border:none; background:transparent; padding:0; }
+    .segmented button{ display:none; }
+    .segmented button.active{
+      display:inline; border:none; background:transparent; color:#000;
+      padding:0; box-shadow:none; font-weight:600;
+    }
+
+    /* Inputs read as plain values, not form fields. */
+    input, textarea{
+      border:none !important; background:transparent !important;
+      color:#000 !important; padding:2px 0 !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .biz-field input{ border-bottom:1px solid #999 !important; }
+  }
 </style>
 </head>
 <body>
@@ -833,7 +878,9 @@
           </div>
         </div>
       </div>
+      <button type="button" class="btn primary" id="exportPdfBtn" title="Abre el diálogo de impresión — elegí 'Guardar como PDF'">Exportar PDF</button>
     </div>
+    <div class="print-only" id="printTimestamp"></div>
   </header>
 
   <section class="kpis" id="kpiRow"></section>
@@ -2014,6 +2061,32 @@
     });
   }
 
+  // ---------------- Export to PDF ----------------
+  // No PDF library needed: the browser's own print dialog ("Guardar como PDF") does the
+  // job, driven by the @media print rules above. We just make sure nothing collapsed
+  // (accordion groups, the ramp-up section) is missing from the printed report, and put
+  // everything back exactly as it was once printing is done or cancelled.
+  function bindExportPdf(){
+    document.getElementById("exportPdfBtn").addEventListener("click", function(){
+      window.print();
+    });
+    window.addEventListener("beforeprint", function(){
+      document.querySelectorAll("details").forEach(function(d){
+        d.dataset.wasOpen = d.open ? "1" : "0";
+        d.open = true;
+      });
+      var now = new Date();
+      document.getElementById("printTimestamp").textContent =
+        "Generado el " + now.toLocaleDateString("es-AR") + " " + now.toLocaleTimeString("es-AR", {hour:"2-digit", minute:"2-digit"});
+    });
+    window.addEventListener("afterprint", function(){
+      document.querySelectorAll("details").forEach(function(d){
+        d.open = d.dataset.wasOpen === "1";
+        delete d.dataset.wasOpen;
+      });
+    });
+  }
+
   fillAssumptionInputs();
   bindAssumptionEvents();
   bindAssumptionsTabbar();
@@ -2023,6 +2096,7 @@
   bindRampEvents();
   renderCurrencyControls();
   bindCurrencyEvents();
+  bindExportPdf();
   renderAll();
 })();
 </script>

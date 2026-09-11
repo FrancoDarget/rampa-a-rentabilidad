@@ -151,6 +151,8 @@
     gap: 4px;
     min-width: 160px;
   }
+  .currency-field:has(#serviceTypeSegmented){ max-width: 260px; }
+  .currency-field .fnote{ line-height: 1.4; }
   .currency-field > label{
     font-size: 11px;
     text-transform: uppercase;
@@ -849,6 +851,13 @@
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
     .biz-field input{ border-bottom:1px solid #999 !important; }
+
+    /* Consultoría: the ramp-up plan and breakeven-before-commission framing only apply to an
+       implementación engagement (agency running the ad spend against a commission). Keep them
+       on screen either way — this only trims what goes into the client-facing PDF. */
+    body[data-service-type="consultoria"] #breakevenCard,
+    body[data-service-type="consultoria"] details.collapsible,
+    body[data-service-type="consultoria"] .kpi-breakeven{ display:none !important; }
   }
 </style>
 </head>
@@ -864,6 +873,14 @@
       <div class="biz-field">
         <label for="bizName">Negocio</label>
         <input id="bizName" type="text" class="plain" value="Mi negocio de e-commerce">
+      </div>
+      <div class="currency-field">
+        <label>Tipo de servicio</label>
+        <div class="segmented" id="serviceTypeSegmented">
+          <button type="button" data-servicetype="implementacion">Implementación</button>
+          <button type="button" data-servicetype="consultoria">Consultoría</button>
+        </div>
+        <span class="fnote">En consultoría, el PDF exportado no incluye el plan de escalado, el punto de equilibrio ni el piso antes de tu comisión — en pantalla seguís viendo todo.</span>
       </div>
       <div class="currency-field">
         <label>Moneda</label>
@@ -1073,7 +1090,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="breakevenCard">
         <div class="card-head">
           <h2>Punto de equilibrio</h2>
           <p class="card-sub">A la eficiencia de pauta del escenario de arriba, esto es lo que el negocio necesita facturar para no perder plata.</p>
@@ -1145,6 +1162,7 @@
 
   var DEFAULTS = {
     biz: "Mi negocio de e-commerce",
+    serviceType: "implementacion",
     a: {
       shipping: 6,
       gatewayPct: 8,
@@ -1193,6 +1211,7 @@
       if (!parsed || !parsed.a || !parsed.scenario || !parsed.display || !Array.isArray(parsed.months) || !parsed.months.length || !Array.isArray(parsed.fixedCosts) || !Array.isArray(parsed.products) || !parsed.products.length) {
         return JSON.parse(JSON.stringify(DEFAULTS));
       }
+      if (typeof parsed.serviceType !== "string") parsed.serviceType = DEFAULTS.serviceType;
       return parsed;
     }catch(e){
       return JSON.parse(JSON.stringify(DEFAULTS));
@@ -1433,17 +1452,17 @@
       { label: "Facturación del escenario", value: money0(line.grossRevenue), cls:"" },
       { label: "Utilidad neta del escenario", value: money0(line.netProfit), cls: line.netProfit >= 0 ? "good" : "bad" },
       { label: "Margen neto del escenario", value: pct1(margin), cls: margin >= 0 ? "good" : "bad" },
-      { label: "Piso antes de tu comisión", value: floor ? money0(floor) : "No se alcanza", cls: floor ? "" : "bad",
+      { label: "Piso antes de tu comisión", value: floor ? money0(floor) : "No se alcanza", cls: floor ? "" : "bad", extraClass:"kpi-breakeven",
         hint: floor ? (line.grossRevenue >= floor ? "El escenario ya lo supera" : "El escenario está por debajo") : "Con el CAC/ROAS actual, ajustalo para encontrar un piso" }
     ] : [
       { label: "Facturación del escenario", value: "No alcanzable", cls:"bad" },
       { label: "Utilidad neta del escenario", value: "No alcanzable", cls:"bad" },
       { label: "Margen neto del escenario", value: "—", cls:"" },
-      { label: "Piso antes de tu comisión", value: "—", cls:"" }
+      { label: "Piso antes de tu comisión", value: "—", cls:"", extraClass:"kpi-breakeven" }
     ];
 
     document.getElementById("kpiRow").innerHTML = cards.map(function(c){
-      return '<div class="kpi"><div class="label">'+c.label+'</div><div class="value '+c.cls+'">'+c.value+'</div>'+
+      return '<div class="kpi'+(c.extraClass?' '+c.extraClass:'')+'"><div class="label">'+c.label+'</div><div class="value '+c.cls+'">'+c.value+'</div>'+
         (c.hint ? '<div class="hint">'+c.hint+'</div>' : '') + '</div>';
     }).join("");
   }
@@ -1831,7 +1850,7 @@
 
     document.getElementById("resetBtn").addEventListener("click", function(){
       state = JSON.parse(JSON.stringify(DEFAULTS));
-      saveState(); fillAssumptionInputs(); renderCurrencyControls(); renderAll();
+      saveState(); fillAssumptionInputs(); renderCurrencyControls(); renderServiceControls(); renderAll();
     });
   }
 
@@ -2031,6 +2050,23 @@
     syncCurrencyPrefixes();
   }
 
+  // ---------------- Service type (drives what the PDF export includes) ----------------
+  function renderServiceControls(){
+    document.querySelectorAll("#serviceTypeSegmented button").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-servicetype") === state.serviceType);
+    });
+    document.body.setAttribute("data-service-type", state.serviceType);
+  }
+
+  function bindServiceEvents(){
+    document.getElementById("serviceTypeSegmented").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-servicetype]");
+      if (!btn) return;
+      state.serviceType = btn.getAttribute("data-servicetype");
+      saveState(); renderServiceControls();
+    });
+  }
+
   // ---------------- Currency toggle ----------------
   function renderCurrencyControls(){
     document.querySelectorAll("#currencySegmented button").forEach(function(b){
@@ -2096,6 +2132,8 @@
   bindRampEvents();
   renderCurrencyControls();
   bindCurrencyEvents();
+  renderServiceControls();
+  bindServiceEvents();
   bindExportPdf();
   renderAll();
 })();

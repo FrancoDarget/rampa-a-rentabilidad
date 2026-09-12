@@ -979,11 +979,17 @@
                 </div>
               </div>
               <div class="field">
-                <label class="flabel" for="agencyVarPct">Fee variable — tu comisión (% s/ margen de contribución)</label>
+                <div class="field-row" style="justify-content:space-between;">
+                  <label class="flabel">Fee variable — tu comisión, calculado sobre</label>
+                  <div class="segmented small" id="agencyFeeBasisSegmented">
+                    <button type="button" data-basis="contribution">Margen contrib.</button>
+                    <button type="button" data-basis="netRevenue">Facturación neta</button>
+                  </div>
+                </div>
                 <div class="num-wrap has-suffix"><span class="suffix">%</span>
                   <input type="number" id="agencyVarPct" min="0" max="100" step="1">
                 </div>
-                <span class="fnote">Esta es la comisión que "El piso de equilibrio" te ayuda a posponer hasta que el cliente cubra sus costos.</span>
+                <span class="fnote">Esta es la comisión que "El piso de equilibrio" te ayuda a posponer hasta que el cliente cubra sus costos. "Facturación neta" es la facturación sin el IVA.</span>
               </div>
             </div>
           </details>
@@ -1178,6 +1184,7 @@
       metaCreditPct: 0,
       agencyFixed: 800,
       agencyVarPct: 25,
+      agencyFeeBasis: "contribution",
       vatOn: true, vatPct: 21,
       turnoverOn: true, turnoverPct: 3.5,
       incomeTaxOn: true, incomeTaxPct: 35,
@@ -1221,6 +1228,7 @@
       }
       if (typeof parsed.serviceType !== "string") parsed.serviceType = DEFAULTS.serviceType;
       if (typeof parsed.a.metaCreditPct !== "number") parsed.a.metaCreditPct = DEFAULTS.a.metaCreditPct;
+      if (parsed.a.agencyFeeBasis !== "contribution" && parsed.a.agencyFeeBasis !== "netRevenue") parsed.a.agencyFeeBasis = DEFAULTS.a.agencyFeeBasis;
       return parsed;
     }catch(e){
       return JSON.parse(JSON.stringify(DEFAULTS));
@@ -1332,7 +1340,8 @@
 
     var fixedCosts = sumFixedCosts();
     var agencyFixed = a.agencyFixed;
-    var agencyVariable = opts.excludeAgencyVariable ? 0 : (contributionMargin * agencyVarPct);
+    var agencyFeeBase = a.agencyFeeBasis === "netRevenue" ? netRevenue : contributionMargin;
+    var agencyVariable = opts.excludeAgencyVariable ? 0 : (agencyFeeBase * agencyVarPct);
     var platformFeeFixed = a.platformFee;
     var turnoverTax = a.turnoverOn ? (netRevenue * turnoverPct) : 0;
     var bankTax = a.bankTaxOn ? (grossRevenue * bankTaxPct) : 0;
@@ -1608,6 +1617,10 @@
   }
 
   // ---------------- Scenario P&L: piso vs. escenario actual ----------------
+  // A row's label is usually a plain string, but a couple (the agency variable fee) depend on
+  // an assumption, so they're a function instead — resolve either shape the same way.
+  function resolveLabel(spec){ return typeof spec.label === "function" ? spec.label() : spec.label; }
+
   var PL_ROWS = [
     { key:"grossRevenue", label:"Facturación bruta (precio final)", fmt:money0 },
     { key:"units", label:"Unidades vendidas", fmt:num0 },
@@ -1625,7 +1638,11 @@
     { key:"contributionMargin", label:"▸ Margen de contribución", fmt:money0, subtotal:true },
     { key:"fixedCosts", label:"(–) Costos fijos del cliente (sueldos, oficina, etc.)", fmt:money0 },
     { key:"agencyFixed", label:"(–) Agencia — fee fijo mensual", fmt:money0 },
-    { key:"agencyVariable", label:"(–) Agencia — fee variable (% s/ margen)", fmt:money0 },
+    { key:"agencyVariable", label: function(){
+        return state.a.agencyFeeBasis === "netRevenue"
+          ? "(–) Agencia — fee variable (% s/ facturación neta)"
+          : "(–) Agencia — fee variable (% s/ margen de contribución)";
+      }, fmt:money0 },
     { key:"platformFeeFixed", label:"(–) Fee mensual plataforma ecommerce", fmt:money0 },
     { key:"turnoverTax", label:"(–) Ingresos brutos / turnover tax", fmt:money0 },
     { key:"bankTax", label:"(–) Imp. créditos/débitos bancarios", fmt:money0 },
@@ -1652,7 +1669,7 @@
       var curVal = current[spec.key];
       var floorCls = "col-total" + ((!spec.info && floorVal < 0) ? " neg" : "");
       var curCls = "col-current" + ((!spec.info && curVal < 0) ? " neg" : "");
-      return '<tr class="'+rowClass+'"><td>'+spec.label+'</td>' +
+      return '<tr class="'+rowClass+'"><td>'+resolveLabel(spec)+'</td>' +
         '<td class="'+floorCls+'">'+ (floorLine ? spec.fmt(floorVal) : "—") +'</td>' +
         '<td class="'+curCls+'">'+ (current.reachable ? spec.fmt(curVal) : "—") +'</td></tr>';
     }).join("");
@@ -1794,7 +1811,7 @@
       var totalVal = spec.info ? (spec.key === "cac" ? data.totals.cac : data.totals.roas) : data.totals[spec.key];
       var totalCls = "col-total" + ((!spec.info && totalVal < 0) ? " neg" : "");
       var totalCell = '<td class="'+totalCls+'">'+spec.fmt(totalVal)+'</td>';
-      return '<tr class="'+rowClass+'"><td>'+spec.label+'</td>'+cells+totalCell+'</tr>';
+      return '<tr class="'+rowClass+'"><td>'+resolveLabel(spec)+'</td>'+cells+totalCell+'</tr>';
     }).join("");
 
     document.getElementById("plTable").innerHTML = head + '<tbody>'+body+'</tbody>';
@@ -1828,9 +1845,16 @@
     });
     renderFixedCostsField();
     renderProductsTab();
+    renderAgencyFeeBasis();
   }
 
   function round2(v){ return Math.round(v*100)/100; }
+
+  function renderAgencyFeeBasis(){
+    document.querySelectorAll("#agencyFeeBasisSegmented button").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-basis") === state.a.agencyFeeBasis);
+    });
+  }
 
   function bindAssumptionEvents(){
     document.getElementById("bizName").addEventListener("input", function(e){
@@ -1857,6 +1881,15 @@
       el.addEventListener("change", function(e){
         state.a[key] = e.target.checked; saveState(); renderAll();
       });
+    });
+
+    document.getElementById("agencyFeeBasisSegmented").addEventListener("click", function(e){
+      var btn = e.target.closest("button[data-basis]");
+      if (!btn) return;
+      var newBasis = btn.getAttribute("data-basis");
+      if (newBasis === state.a.agencyFeeBasis) return;
+      state.a.agencyFeeBasis = newBasis;
+      saveState(); renderAgencyFeeBasis(); renderAll();
     });
 
     document.getElementById("resetBtn").addEventListener("click", function(){

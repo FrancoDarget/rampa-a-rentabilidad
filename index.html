@@ -944,6 +944,13 @@
                   <input type="number" id="shipping" min="0" step="0.5">
                 </div>
               </div>
+              <div class="field">
+                <label class="flabel" for="metaCreditPct">Costo de crédito Meta (% s/ inversión en pauta)</label>
+                <div class="num-wrap has-suffix"><span class="suffix">%</span>
+                  <input type="number" id="metaCreditPct" min="0" max="100" step="0.1">
+                </div>
+                <span class="fnote">Lo que te cobra la agencia de medios por darte línea de crédito para pagarle a Meta.</span>
+              </div>
             </div>
           </details>
 
@@ -1168,6 +1175,7 @@
       gatewayPct: 8,
       platformPct: 1,
       platformFee: 50,
+      metaCreditPct: 0,
       agencyFixed: 800,
       agencyVarPct: 25,
       vatOn: true, vatPct: 21,
@@ -1212,6 +1220,7 @@
         return JSON.parse(JSON.stringify(DEFAULTS));
       }
       if (typeof parsed.serviceType !== "string") parsed.serviceType = DEFAULTS.serviceType;
+      if (typeof parsed.a.metaCreditPct !== "number") parsed.a.metaCreditPct = DEFAULTS.a.metaCreditPct;
       return parsed;
     }catch(e){
       return JSON.parse(JSON.stringify(DEFAULTS));
@@ -1301,7 +1310,7 @@
     opts = opts || {};
     var cogsPct = a.cogsPct/100, gatewayPct = a.gatewayPct/100, platformPct = a.platformPct/100;
     var agencyVarPct = a.agencyVarPct/100, vatPct = a.vatPct/100, turnoverPct = a.turnoverPct/100;
-    var incomeTaxPct = a.incomeTaxPct/100, bankTaxPct = a.bankTaxPct/100;
+    var incomeTaxPct = a.incomeTaxPct/100, bankTaxPct = a.bankTaxPct/100, metaCreditPct = (a.metaCreditPct||0)/100;
 
     var grossRevenue = revenue;
     var units = a.aov > 0 ? grossRevenue / a.aov : 0;
@@ -1314,11 +1323,12 @@
     var gatewayFee = grossRevenue * gatewayPct;
     var platformFeePct = grossRevenue * platformPct;
     var shippingCost = units * a.shipping;
+    var metaCreditCost = adSpend * metaCreditPct;
 
     var cac = units > 0 ? (adSpend / units) : NaN;
     var roas = adSpend > 0 ? (grossRevenue / adSpend) : NaN;
 
-    var contributionMargin = grossProfit - gatewayFee - platformFeePct - shippingCost - adSpend;
+    var contributionMargin = grossProfit - gatewayFee - platformFeePct - shippingCost - adSpend - metaCreditCost;
 
     var fixedCosts = sumFixedCosts();
     var agencyFixed = a.agencyFixed;
@@ -1335,7 +1345,7 @@
       grossRevenue: grossRevenue, units: units, vatAmount: vatAmount,
       netRevenue: netRevenue, cogs: cogs, grossProfit: grossProfit, gatewayFee: gatewayFee,
       platformFeePct: platformFeePct, shippingCost: shippingCost, cac: cac, roas: roas,
-      adSpend: adSpend, contributionMargin: contributionMargin, fixedCosts: fixedCosts,
+      adSpend: adSpend, metaCreditCost: metaCreditCost, contributionMargin: contributionMargin, fixedCosts: fixedCosts,
       agencyFixed: agencyFixed, agencyVariable: agencyVariable, platformFeeFixed: platformFeeFixed,
       turnoverTax: turnoverTax, bankTax: bankTax, operatingProfitBeforeTax: operatingProfitBeforeTax,
       incomeTax: incomeTax, netProfit: netProfit
@@ -1611,6 +1621,7 @@
     { key:"cac", label:"CAC estimado (US$ por unidad)", fmt:money2, info:true },
     { key:"roas", label:"ROAS estimado (facturación / pauta)", fmt:xTimes, info:true },
     { key:"adSpend", label:"(–) Inversión en pauta", fmt:money0 },
+    { key:"metaCreditCost", label:"(–) Costo de crédito Meta (% s/ inversión en pauta)", fmt:money0 },
     { key:"contributionMargin", label:"▸ Margen de contribución", fmt:money0, subtotal:true },
     { key:"fixedCosts", label:"(–) Costos fijos del cliente (sueldos, oficina, etc.)", fmt:money0 },
     { key:"agencyFixed", label:"(–) Agencia — fee fijo mensual", fmt:money0 },
@@ -1790,12 +1801,12 @@
   }
 
   // ---------------- Wiring assumptions ----------------
-  var PCT_FIELDS = ["gatewayPct","platformPct","agencyVarPct","vatPct","turnoverPct","incomeTaxPct","bankTaxPct"];
+  var PCT_FIELDS = ["gatewayPct","platformPct","metaCreditPct","agencyVarPct","vatPct","turnoverPct","incomeTaxPct","bankTaxPct"];
   var NUM_FIELDS = ["shipping","platformFee","agencyFixed"];
   var CHECK_FIELDS = ["vatOn","turnoverOn","incomeTaxOn","bankTaxOn"];
   var FIELD_ID = {
     shipping:"shipping", gatewayPct:"gatewayPct",
-    platformPct:"platformPct", platformFee:"platformFee", agencyFixed:"agencyFixed",
+    platformPct:"platformPct", metaCreditPct:"metaCreditPct", platformFee:"platformFee", agencyFixed:"agencyFixed",
     agencyVarPct:"agencyVarPct", vatPct:"vatPct", turnoverPct:"turnoverPct",
     incomeTaxPct:"incomeTaxPct", bankTaxPct:"bankTaxPct",
     vatOn:"vatOn", turnoverOn:"turnoverOn", incomeTaxOn:"incomeTaxOn", bankTaxOn:"bankTaxOn"
